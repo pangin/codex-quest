@@ -9,7 +9,35 @@ permissions:
   contents: write
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgl1-mesa-dev \
+            libxi-dev \
+            libxcursor-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxxf86vm-dev \
+            libwayland-dev \
+            libxkbcommon-dev
+
+      - name: Test
+        run: go test ./...
+
   build-macos:
+    needs: validate
     runs-on: macos-latest
     strategy:
       matrix:
@@ -20,7 +48,8 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version-file: go.mod
+          cache: true
 
       - name: Build
         env:
@@ -28,15 +57,18 @@ jobs:
           GOOS: darwin
           GOARCH: ${{ matrix.goarch }}
         run: |
-          go build -trimpath -ldflags="-s -w" -o cq-darwin-${{ matrix.goarch }} .
+          mkdir -p dist release
+          go build -trimpath -ldflags="-s -w" -o dist/cxq-darwin-${{ matrix.goarch }} .
+          tar -czf release/codex-quest_${{ github.ref_name }}_darwin_${{ matrix.goarch }}.tar.gz -C dist cxq-darwin-${{ matrix.goarch }}
 
-      - name: Upload artifact
+      - name: Upload release asset
         uses: actions/upload-artifact@v4
         with:
-          name: cq-darwin-${{ matrix.goarch }}
-          path: cq-darwin-${{ matrix.goarch }}
+          name: release-darwin-${{ matrix.goarch }}
+          path: release/*
 
   build-linux:
+    needs: validate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,12 +76,21 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version-file: go.mod
+          cache: true
 
-      - name: Install dependencies
+      - name: Install Linux build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libxxf86vm-dev libwayland-dev libxkbcommon-dev
+          sudo apt-get install -y \
+            libgl1-mesa-dev \
+            libxi-dev \
+            libxcursor-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxxf86vm-dev \
+            libwayland-dev \
+            libxkbcommon-dev
 
       - name: Build
         env:
@@ -57,15 +98,18 @@ jobs:
           GOOS: linux
           GOARCH: amd64
         run: |
-          go build -trimpath -ldflags="-s -w" -o cq-linux-amd64 .
+          mkdir -p dist release
+          go build -trimpath -ldflags="-s -w" -o dist/cxq-linux-amd64 .
+          tar -czf release/codex-quest_${{ github.ref_name }}_linux_amd64.tar.gz -C dist cxq-linux-amd64
 
-      - name: Upload artifact
+      - name: Upload release asset
         uses: actions/upload-artifact@v4
         with:
-          name: cq-linux-amd64
-          path: cq-linux-amd64
+          name: release-linux-amd64
+          path: release/*
 
   build-windows:
+    needs: validate
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -73,67 +117,44 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version-file: go.mod
+          cache: true
 
       - name: Build
+        shell: pwsh
         env:
           CGO_ENABLED: 1
           GOOS: windows
           GOARCH: amd64
         run: |
-          go build -trimpath -ldflags="-s -w -H windowsgui" -o cq-windows-amd64.exe .
+          New-Item -ItemType Directory -Force -Path dist, release
+          go build -trimpath -ldflags="-s -w -H windowsgui" -o dist/cxq-windows-amd64.exe .
+          Compress-Archive -Path dist/cxq-windows-amd64.exe -DestinationPath release/codex-quest_${{ github.ref_name }}_windows_amd64.zip
 
-      - name: Upload artifact
+      - name: Upload release asset
         uses: actions/upload-artifact@v4
         with:
-          name: cq-windows-amd64
-          path: cq-windows-amd64.exe
+          name: release-windows-amd64
+          path: release/*
 
-  release:
+  publish:
     needs: [build-macos, build-linux, build-windows]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Download all artifacts
+      - name: Download release assets
         uses: actions/download-artifact@v4
         with:
-          path: dist
+          path: artifacts
 
-      - name: Prepare release assets
+      - name: Prepare checksums
         run: |
           mkdir -p release
-
-          # macOS Intel
-          cd dist/cq-darwin-amd64
-          chmod +x cq-darwin-amd64
-          tar -czvf ../../release/claude-quest_${{ github.ref_name }}_darwin_amd64.tar.gz cq-darwin-amd64
-          cd ../..
-
-          # macOS Apple Silicon
-          cd dist/cq-darwin-arm64
-          chmod +x cq-darwin-arm64
-          tar -czvf ../../release/claude-quest_${{ github.ref_name }}_darwin_arm64.tar.gz cq-darwin-arm64
-          cd ../..
-
-          # Linux
-          cd dist/cq-linux-amd64
-          chmod +x cq-linux-amd64
-          tar -czvf ../../release/claude-quest_${{ github.ref_name }}_linux_amd64.tar.gz cq-linux-amd64
-          cd ../..
-
-          # Windows
-          cd dist/cq-windows-amd64
-          zip ../../release/claude-quest_${{ github.ref_name }}_windows_amd64.zip cq-windows-amd64.exe
-          cd ../..
-
-          # Checksums
+          find artifacts -maxdepth 3 -type f -exec cp {} release/ \;
           cd release
-          sha256sum * > checksums.txt
-          cd ..
+          sha256sum -- * > checksums.txt
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
         with:
           files: release/*
           generate_release_notes: true

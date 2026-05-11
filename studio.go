@@ -10,11 +10,11 @@ import (
 
 // Studio mode - clean asset development environment
 func runStudio() {
-	fmt.Println("Claude Quest Studio")
+	fmt.Println("Codex Quest Studio")
 	fmt.Println("Asset development environment with hot reload")
 
 	rl.SetConfigFlags(rl.FlagWindowResizable)
-	rl.InitWindow(screenWidth*windowScale, screenHeight*windowScale, "Claude Quest Studio")
+	rl.InitWindow(screenWidth*windowScale, screenHeight*windowScale, "Codex Quest Studio")
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
 

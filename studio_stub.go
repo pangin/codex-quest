@@ -9,6 +9,6 @@ import (
 
 func runStudio() {
 	fmt.Println("Studio mode is not available in release builds.")
-	fmt.Println("Build with: go build -tags debug -o cq . && ./cq studio")
+	fmt.Printf("Build with: go build -tags debug -o %s . && ./%s studio\n", appCommandName, appCommandName)
 	os.Exit(1)
 }

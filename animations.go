@@ -35,7 +35,7 @@ func (a AnimationType) String() string {
 	return "Unknown"
 }
 
-// AnimationState holds the current state of Claude's animation
+// AnimationState holds the current state of Codex's animation
 type AnimationState struct {
 	CurrentAnim AnimationType
 	Frame       int
@@ -43,7 +43,7 @@ type AnimationState struct {
 	Queue       []AnimationType // Queued animations to play
 }
 
-// AnimationSystem manages Claude's animation state machine
+// AnimationSystem manages Codex's animation state machine
 type AnimationSystem struct {
 	state         *AnimationState
 	frameDuration float32 // Seconds per frame
@@ -62,7 +62,7 @@ func NewAnimationSystem() *AnimationSystem {
 			Timer:       0,
 			Queue:       make([]AnimationType, 0),
 		},
-		walkMode:      true, // Always in Quest mode - walk when active
+		walkMode:      true,  // Always in Quest mode - walk when active
 		frameDuration: 0.042, // 24 FPS for smooth animation
 		animLengths: map[AnimationType]int{
 			AnimIdle:        16,
@@ -79,7 +79,7 @@ func NewAnimationSystem() *AnimationSystem {
 	}
 }
 
-// HandleEvent processes a Claude Code event and triggers appropriate animation
+// HandleEvent processes a Codex event and triggers appropriate animation
 func (a *AnimationSystem) HandleEvent(event Event) {
 	var newAnim AnimationType
 
@@ -122,7 +122,7 @@ func (a *AnimationSystem) HandleEvent(event Event) {
 		// Asking user - use thinking animation
 		newAnim = AnimThinking
 	case EventEnemyHit:
-		// Enemy hit Claude - play hurt animation
+		// Enemy hit Codex - play hurt animation
 		newAnim = AnimHurt
 	case EventVictoryPose:
 		// Triumphant fist pump celebration

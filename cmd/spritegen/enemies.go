@@ -90,7 +90,7 @@ func drawBug(img *image.RGBA, ox, oy, frame int) {
 			// Create oval shape
 			dx := float64(x) - 5.5
 			dy := float64(y) - 3.5
-			if dx*dx/36 + dy*dy/16 < 1 {
+			if dx*dx/36+dy*dy/16 < 1 {
 				c := bugShell
 				if y < 3 {
 					c = bugShellH // Highlight on top

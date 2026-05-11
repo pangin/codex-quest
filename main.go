@@ -16,8 +16,8 @@ const (
 	screenWidth  = 320
 	screenHeight = 200
 	windowScale  = 2 // Initial scale (640x400 ~ terminal size)
-	windowTitle  = "Claude Quest"
-	maxTokens    = 200000 // Opus 4.5 context window
+	windowTitle  = appName
+	maxTokens    = defaultMaxTokens
 )
 
 // ThrownTool represents a tool name being thrown forward
@@ -30,7 +30,7 @@ type ThrownTool struct {
 	Color   uint32 // Packed RGBA
 }
 
-// MiniAnimType represents mini Claude animation types
+// MiniAnimType represents mini Codex animation types
 type MiniAnimType int
 
 const (
@@ -40,7 +40,7 @@ const (
 	MiniAnimPoof
 )
 
-// MiniAgent represents a mini Claude spawned for a subagent
+// MiniAgent represents a mini Codex spawned for a subagent
 type MiniAgent struct {
 	ID        string       // Unique agent ID
 	Name      string       // Agent type name to display
@@ -61,15 +61,15 @@ const (
 	EnemyLowContext
 )
 
-// FlyingEnemy represents an enemy flying toward Claude
+// FlyingEnemy represents an enemy flying toward Codex
 type FlyingEnemy struct {
-	Type    EnemyType
-	X, Y    float32 // Current position
-	VX, VY  float32 // Velocity (VX negative = moving left, VY affected by gravity)
-	Frame   int     // Animation frame
-	Timer   float32 // Animation timer
-	Hit     bool    // Has it hit Claude?
-	Impact  float32 // Impact effect timer (> 0 means showing impact)
+	Type   EnemyType
+	X, Y   float32 // Current position
+	VX, VY float32 // Velocity (VX negative = moving left, VY affected by gravity)
+	Frame  int     // Animation frame
+	Timer  float32 // Animation timer
+	Hit    bool    // Has it hit Codex?
+	Impact float32 // Impact effect timer (> 0 means showing impact)
 }
 
 // FloatingXP represents a floating "+XP" indicator
@@ -109,10 +109,10 @@ type GameState struct {
 	// Thrown tools effect
 	ThrownTools []ThrownTool
 
-	// Mini agents (subagents displayed as mini Claudes)
+	// Mini agents (subagents displayed as mini Codexs)
 	MiniAgents []MiniAgent
 
-	// Flying enemies (attack Claude on errors)
+	// Flying enemies (attack Codex on errors)
 	FlyingEnemies []FlyingEnemy
 	PendingHurt   bool // Set when enemy hits, triggers hurt animation
 
@@ -130,10 +130,10 @@ type GameState struct {
 	Session SessionStats   // Current session stats
 
 	// Level up / chest state
-	PendingLevelUp    bool            // True when level up occurred, triggers chest
-	PendingBonusChest bool            // True when bonus chest triggered
-	BonusChestReason  string          // Why bonus chest was triggered
-	ActiveChest       *TreasureChest  // Currently active treasure chest (nil if none)
+	PendingLevelUp    bool           // True when level up occurred, triggers chest
+	PendingBonusChest bool           // True when bonus chest triggered
+	BonusChestReason  string         // Why bonus chest was triggered
+	ActiveChest       *TreasureChest // Currently active treasure chest (nil if none)
 
 	// Floating XP indicators
 	FloatingXPs []FloatingXP
@@ -221,7 +221,7 @@ func (g *GameState) Update(dt float32) {
 			g.ThoughtFade = 1.0
 		} else if g.ThoughtTimer < 12.0 {
 			// Fade out
-			g.ThoughtFade = 1.0 - (g.ThoughtTimer - 11.6) / 0.4
+			g.ThoughtFade = 1.0 - (g.ThoughtTimer-11.6)/0.4
 		} else {
 			// Clear
 			g.ThoughtText = ""
@@ -308,12 +308,12 @@ func (g *GameState) Update(dt float32) {
 	}
 }
 
-// SpawnFloatingXP creates a new floating XP indicator above Claude's head
+// SpawnFloatingXP creates a new floating XP indicator above Codex's head
 func (g *GameState) SpawnFloatingXP(amount int) {
-	// Spawn position: above Claude's head with some randomness
+	// Spawn position: above Codex's head with some randomness
 	baseX := float32(screenWidth/2 - 10)
-	baseY := float32(70) // Above Claude
-	offsetX := float32((len(g.FloatingXPs) % 3) - 1) * 15 // Spread out if multiple
+	baseY := float32(70)                              // Above Codex
+	offsetX := float32((len(g.FloatingXPs)%3)-1) * 15 // Spread out if multiple
 
 	g.FloatingXPs = append(g.FloatingXPs, FloatingXP{
 		Amount:  amount,
@@ -339,7 +339,7 @@ func (g *GameState) updateFloatingXPs(dt float32) {
 	g.FloatingXPs = alive
 }
 
-// Mini Claude animation frame counts: Spawn=8, Idle=8, Walk=8, Poof=6
+// Mini Codex animation frame counts: Spawn=8, Idle=8, Walk=8, Poof=6
 var miniFrameCounts = []int{8, 8, 8, 6}
 
 // updateMiniAgents updates all mini agent animations
@@ -411,10 +411,10 @@ const enemyFrameCount = 4
 
 // updateFlyingEnemies updates all flying enemies
 func (g *GameState) updateFlyingEnemies(dt float32) {
-	frameDuration := float32(0.1)  // Animation speed
-	claudeX := float32(screenWidth / 2)
-	claudeY := float32(screenHeight/2 + 10) // Claude's center
-	gravity := float32(120)        // Gravity strength
+	frameDuration := float32(0.1) // Animation speed
+	codexX := float32(screenWidth / 2)
+	codexY := float32(screenHeight/2 + 10) // Codex's center
+	gravity := float32(120)                // Gravity strength
 
 	aliveEnemies := g.FlyingEnemies[:0]
 	for i := range g.FlyingEnemies {
@@ -442,9 +442,9 @@ func (g *GameState) updateFlyingEnemies(dt float32) {
 			e.Y += e.VY * dt
 			e.VY += gravity * dt // Apply gravity
 
-			// Check if hit Claude (within hitbox)
-			dx := e.X - claudeX
-			dy := e.Y - claudeY
+			// Check if hit Codex (within hitbox)
+			dx := e.X - codexX
+			dy := e.Y - codexY
 			if dx < 30 && dx > -30 && dy < 30 && dy > -30 {
 				e.Hit = true
 				e.Impact = 0.3 // Show impact for 0.3 seconds
@@ -468,7 +468,7 @@ func (g *GameState) updateFlyingEnemies(dt float32) {
 	g.FlyingEnemies = aliveEnemies
 }
 
-// SpawnEnemy creates a flying enemy that attacks Claude
+// SpawnEnemy creates a flying enemy that attacks Codex
 func (g *GameState) SpawnEnemy(enemyType EnemyType) {
 	// Start from right side of screen at varied heights
 	startX := float32(screenWidth + 30)
@@ -492,7 +492,7 @@ func (g *GameState) SpawnEnemy(enemyType EnemyType) {
 		initialVY = -60 - randFloat()*40
 	}
 
-	// Horizontal speed toward Claude
+	// Horizontal speed toward Codex
 	vx := float32(-140 - randFloat()*60) // Speed: 140-200 pixels/sec
 
 	enemy := FlyingEnemy{
@@ -511,7 +511,7 @@ func (g *GameState) SpawnEnemy(enemyType EnemyType) {
 
 // ThrowTool creates a thrown tool effect with random direction
 func (g *GameState) ThrowTool(toolName string, color uint32) {
-	// Start from Claude's position with slight random offset
+	// Start from Codex's position with slight random offset
 	startX := float32(screenWidth/2) + (randFloat()*20 - 10)
 	startY := float32(screenHeight/2-10) + (randFloat()*10 - 5)
 
@@ -548,16 +548,16 @@ func randFloat() float32 {
 	return float32(randSeed&0x7FFFFFFF) / float32(0x7FFFFFFF)
 }
 
-// SpawnMiniAgent creates a new mini Claude for a subagent
+// SpawnMiniAgent creates a new mini Codex for a subagent
 func (g *GameState) SpawnMiniAgent(agentType string) {
 	// Generate unique ID
 	id := fmt.Sprintf("agent-%d", len(g.MiniAgents)+1)
 
-	// Start position: at big Claude's feet
+	// Start position: at big Codex's feet
 	startX := float32(screenWidth / 2)
 	startY := float32(165) // Ground level
 
-	// Target position: random spot to left or right of big Claude
+	// Target position: random spot to left or right of big Codex
 	// Spread out based on how many agents already exist
 	offset := float32(40 + len(g.MiniAgents)*25) // 40-90+ pixels away
 	if randFloat() > 0.5 {
@@ -644,6 +644,9 @@ func (g *GameState) HandleEvent(event Event) {
 
 	// Update mana from token usage
 	if event.TokenUsage != nil {
+		if event.TokenUsage.ContextWindow > 0 {
+			g.ManaMax = event.TokenUsage.ContextWindow
+		}
 		g.ManaTotal = event.TokenUsage.Total()
 		if g.Profile != nil {
 			g.Profile.RecordTokens(event.TokenUsage.Total())
@@ -855,69 +858,60 @@ func getScaledDestRect() rl.Rectangle {
 }
 
 func printUsage() {
-	fmt.Println(`Claude Quest - RPG Animation Viewer for Claude Code
+	fmt.Printf(`%s - RPG Animation Viewer for Codex
 
 Usage:
-  cq                    Watch the current directory's latest conversation
-  cq watch [dir]        Watch a specific directory's conversation
-  cq replay <file>      Replay an existing conversation JSONL file
-  cq studio             Studio mode - asset dev environment (requires -tags debug build)
-  cq doctor             Check if Claude Quest can run properly
+  %[2]s                    Watch the current directory's latest Codex session
+  %[2]s watch [dir]        Watch a specific directory's Codex session
+  %[2]s replay <file>      Replay an existing Codex session JSONL file
+  %[2]s studio             Studio mode - asset dev environment (requires -tags debug build)
+  %[2]s doctor             Check if Codex Quest can run properly
 
 Options:
   -s, --speed <ms>      Replay speed in milliseconds (default: 200)
   -h, --help            Show this help message
 
 Examples:
-  cq                                    # Watch current project
-  cq watch ~/Projects/myapp             # Watch specific project
-  cq replay ~/.claude/projects/-Users-me-Projects-myapp/abc123.jsonl
-  go build -tags debug && ./cq studio   # Studio mode for asset development`)
+  %[2]s                                    # Watch current project
+  %[2]s watch ~/Projects/myapp             # Watch specific project
+  %[2]s replay ~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl
+  go build -tags debug -o %[2]s . && ./%[2]s studio   # Studio mode for asset development
+`, appName, appCommandName)
 }
 
-// runDoctor checks if all requirements for Claude Quest are met
+// runDoctor checks if all requirements for Codex Quest are met
 func runDoctor() {
-	fmt.Println("Claude Quest Doctor")
+	fmt.Println("Codex Quest Doctor")
 	fmt.Println("===================")
 	fmt.Println()
 
 	allGood := true
 	home, _ := os.UserHomeDir()
-	claudeDir, err := claudeConfigDir()
+	codexDir, err := codexConfigDir()
 	if err != nil {
-		fmt.Println("  [!!] Could not determine Claude config directory")
+		fmt.Println("  [!!] Could not determine Codex config directory")
 		return
 	}
 
-	// Check Claude Code installation
-	fmt.Println("Claude Code:")
+	fmt.Println("Codex:")
 
-	if envDir := os.Getenv("CLAUDE_CONFIG_DIR"); envDir != "" {
-		fmt.Printf("  [OK] Using CLAUDE_CONFIG_DIR: %s\n", envDir)
+	if envDir := os.Getenv("CODEX_HOME"); envDir != "" {
+		fmt.Printf("  [OK] Using CODEX_HOME: %s\n", envDir)
 	}
 
-	if _, err := os.Stat(claudeDir); err == nil {
-		fmt.Printf("  [OK] %s exists\n", claudeDir)
+	if _, err := os.Stat(codexDir); err == nil {
+		fmt.Printf("  [OK] %s exists\n", codexDir)
 	} else {
-		fmt.Printf("  [!!] %s not found - is Claude Code installed?\n", claudeDir)
+		fmt.Printf("  [!!] %s not found - has Codex run on this machine?\n", codexDir)
 		allGood = false
 	}
 
-	projectsDir := filepath.Join(claudeDir, "projects")
-	if _, err := os.Stat(projectsDir); err == nil {
-		fmt.Printf("  [OK] %s exists\n", projectsDir)
-
-		// Count project directories
-		entries, _ := os.ReadDir(projectsDir)
-		projectCount := 0
-		for _, e := range entries {
-			if e.IsDir() && strings.HasPrefix(e.Name(), "-") {
-				projectCount++
-			}
-		}
-		fmt.Printf("  [OK] Found %d project(s)\n", projectCount)
+	sessionsDir := filepath.Join(codexDir, "sessions")
+	if _, err := os.Stat(sessionsDir); err == nil {
+		fmt.Printf("  [OK] %s exists\n", sessionsDir)
+		fmt.Printf("  [OK] Found %d session file(s)\n", countCodexSessionFiles(sessionsDir))
 	} else {
-		fmt.Printf("  [!!] %s not found\n", projectsDir)
+		fmt.Printf("  [!!] %s not found\n", sessionsDir)
 		allGood = false
 	}
 
@@ -927,46 +921,25 @@ func runDoctor() {
 
 	cwd, _ := os.Getwd()
 	absPath, _ := filepath.Abs(cwd)
-	encoded := encodeProjectPath(absPath)
-	projectDir := filepath.Join(projectsDir, encoded)
 
 	fmt.Printf("  Path: %s\n", cwd)
-	fmt.Printf("  Encoded: %s\n", encoded)
 
-	if _, err := os.Stat(projectDir); err == nil {
-		fmt.Println("  [OK] Project directory exists")
+	probe := NewWatcher()
+	if err := probe.FindCodexSession(absPath); err == nil {
+		fmt.Println("  [OK] Codex session exists")
+		fmt.Printf("  [OK] Latest: %s\n", probe.FilePath)
 
-		// Count JSONL files
-		entries, _ := os.ReadDir(projectDir)
-		jsonlCount := 0
-		var latestFile string
-		for _, e := range entries {
-			if !e.IsDir() && strings.HasSuffix(e.Name(), ".jsonl") && !strings.HasPrefix(e.Name(), "agent-") {
-				jsonlCount++
-				latestFile = e.Name()
-			}
-		}
-		if jsonlCount > 0 {
-			fmt.Printf("  [OK] Found %d conversation file(s)\n", jsonlCount)
-			fmt.Printf("  [OK] Latest: %s\n", latestFile)
-
-			// Validate JSONL structure
-			latestPath := filepath.Join(projectDir, latestFile)
-			if valid, details := validateJSONL(latestPath); valid {
-				fmt.Println("  [OK] JSONL structure valid")
-				fmt.Printf("       %s\n", details)
-			} else {
-				fmt.Println("  [!!] JSONL structure invalid")
-				fmt.Printf("       %s\n", details)
-				allGood = false
-			}
+		if valid, details := validateJSONL(probe.FilePath); valid {
+			fmt.Println("  [OK] JSONL structure valid")
+			fmt.Printf("       %s\n", details)
 		} else {
-			fmt.Println("  [!!] No conversation files found")
+			fmt.Println("  [!!] JSONL structure invalid")
+			fmt.Printf("       %s\n", details)
 			allGood = false
 		}
 	} else {
-		fmt.Println("  [--] No conversations for this project yet")
-		fmt.Println("       (Run Claude Code here first)")
+		fmt.Println("  [--] No Codex sessions for this project yet")
+		fmt.Println("       (Run Codex here first)")
 	}
 
 	// Check assets
@@ -978,8 +951,8 @@ func runDoctor() {
 		name string
 		path string
 	}{
-		{"Main spritesheet", "claude/spritesheet.png"},
-		{"Mini spritesheet", "claude/mini_spritesheet.png"},
+		{"Main spritesheet", "codex/spritesheet.png"},
+		{"Mini spritesheet", "codex/mini_spritesheet.png"},
 		{"Enemy spritesheet", "enemies/enemy_spritesheet.png"},
 		{"Treasure chest", "ui/chest.png"},
 	}
@@ -1021,7 +994,7 @@ func runDoctor() {
 	fmt.Println()
 	fmt.Println("User Config:")
 
-	prefsPath := filepath.Join(home, ".claude-quest-prefs.json")
+	prefsPath := filepath.Join(home, prefsFileName)
 	if _, err := os.Stat(prefsPath); err == nil {
 		fmt.Println("  [OK] Preferences file exists")
 	} else {
@@ -1032,7 +1005,7 @@ func runDoctor() {
 	fmt.Println()
 	fmt.Println("===================")
 	if allGood {
-		fmt.Println("All checks passed! Claude Quest should work.")
+		fmt.Println("All checks passed! Codex Quest should work.")
 	} else {
 		fmt.Println("Some issues found. See [!!] items above.")
 	}
@@ -1058,7 +1031,7 @@ func getAssetPathForDoctor(relativePath string) string {
 	return filepath.Join("assets", relativePath)
 }
 
-// validateJSONL checks if a JSONL file has the structure Claude Quest requires
+// validateJSONL checks if a JSONL file has the structure Codex Quest requires.
 func validateJSONL(path string) (bool, string) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -1069,15 +1042,12 @@ func validateJSONL(path string) (bool, string) {
 	scanner := bufio.NewScanner(file)
 	scanner.Buffer(make([]byte, 1024*1024), 10*1024*1024)
 
-	// Requirements we check for
 	var (
-		hasValidJSON     bool
-		hasTypeField     bool
-		hasMessageRole   bool
-		hasContentArray  bool
-		hasToolUseType   bool
-		hasToolUseName   bool
-		linesChecked     int
+		hasValidJSON    bool
+		hasSessionMeta  bool
+		hasEventMsg     bool
+		hasResponseItem bool
+		linesChecked    int
 	)
 
 	for scanner.Scan() {
@@ -1087,46 +1057,20 @@ func validateJSONL(path string) (bool, string) {
 			continue
 		}
 
-		var msg struct {
-			Type    string `json:"type"`
-			Message struct {
-				Role    string          `json:"role"`
-				Content json.RawMessage `json:"content"`
-			} `json:"message"`
-		}
-
-		if json.Unmarshal([]byte(line), &msg) == nil {
+		var record codexRecord
+		if json.Unmarshal([]byte(line), &record) == nil {
 			hasValidJSON = true
-
-			if msg.Type != "" {
-				hasTypeField = true
-			}
-			if msg.Message.Role != "" {
-				hasMessageRole = true
-			}
-
-			// Check content structure
-			if msg.Message.Content != nil {
-				var content []struct {
-					Type string `json:"type"`
-					Name string `json:"name,omitempty"`
-				}
-				if json.Unmarshal(msg.Message.Content, &content) == nil && len(content) > 0 {
-					hasContentArray = true
-					for _, c := range content {
-						if c.Type == "tool_use" {
-							hasToolUseType = true
-							if c.Name != "" {
-								hasToolUseName = true
-							}
-						}
-					}
-				}
+			switch record.Type {
+			case "session_meta":
+				hasSessionMeta = len(record.Payload) > 0
+			case "event_msg":
+				hasEventMsg = len(record.Payload) > 0
+			case "response_item":
+				hasResponseItem = len(record.Payload) > 0
 			}
 		}
 
-		// Stop once we've validated all requirements or checked enough lines
-		if hasValidJSON && hasTypeField && hasMessageRole && hasContentArray && hasToolUseName {
+		if hasValidJSON && hasSessionMeta && hasEventMsg && hasResponseItem {
 			break
 		}
 		if linesChecked >= 100 {
@@ -1134,33 +1078,26 @@ func validateJSONL(path string) (bool, string) {
 		}
 	}
 
-	// Check requirements
 	var missing []string
 
 	if !hasValidJSON {
 		missing = append(missing, "valid JSON")
 	}
-	if !hasTypeField {
-		missing = append(missing, "type field")
+	if !hasSessionMeta {
+		missing = append(missing, "session_meta record")
 	}
-	if !hasMessageRole {
-		missing = append(missing, "message.role")
+	if !hasEventMsg {
+		missing = append(missing, "event_msg record")
 	}
-	if !hasContentArray {
-		missing = append(missing, "message.content array")
-	}
-	if !hasToolUseType {
-		missing = append(missing, "tool_use content type")
-	}
-	if !hasToolUseName {
-		missing = append(missing, "tool_use.name field")
+	if !hasResponseItem {
+		missing = append(missing, "response_item record")
 	}
 
 	if len(missing) > 0 {
 		return false, "missing: " + strings.Join(missing, ", ")
 	}
 
-	return true, "all required fields present"
+	return true, "Codex session records present"
 }
 
 var animationNames = []string{
@@ -1305,7 +1242,7 @@ func main() {
 		// Sync activity state to animation system
 		animations.SetActive(gameState.IsActive)
 
-		// Check if an enemy hit Claude - trigger hurt animation
+		// Check if an enemy hit Codex - trigger hurt animation
 		if gameState.PendingHurt {
 			gameState.PendingHurt = false
 			animations.HandleEvent(Event{Type: EventEnemyHit})

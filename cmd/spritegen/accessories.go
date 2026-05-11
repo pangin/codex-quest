@@ -93,16 +93,16 @@ func generateWizardHat() [][]C {
 	o := O // outline
 
 	// Classic purple wizard colors
-	m := C{80, 50, 120, 255}   // main purple
-	s := C{55, 35, 90, 255}    // shadow
-	sd := C{40, 25, 65, 255}   // deep shadow
-	h := C{110, 75, 160, 255}  // highlight
+	m := C{80, 50, 120, 255}    // main purple
+	s := C{55, 35, 90, 255}     // shadow
+	sd := C{40, 25, 65, 255}    // deep shadow
+	h := C{110, 75, 160, 255}   // highlight
 	hb := C{140, 100, 190, 255} // bright highlight
 	// Gold star/buckle accent
-	g := C{255, 215, 0, 255}   // gold
-	gd := C{200, 160, 0, 255}  // gold dark
+	g := C{255, 215, 0, 255}  // gold
+	gd := C{200, 160, 0, 255} // gold dark
 
-	// Simple pointy cone, wide brim (wider than Claude's head ~18px)
+	// Simple pointy cone, wide brim (wider than Codex's head ~18px)
 	return [][]C{
 		// Pointy tip
 		{X, X, X, X, X, X, X, X, X, X, o, X, X, X, X, X, X, X, X, X, X},
@@ -131,14 +131,14 @@ func generateWizardHat() [][]C {
 func generatePartyHat() [][]C {
 	o := O
 	// Rainbow stripes!
-	r := C{255, 80, 100, 255}   // red
-	rd := C{200, 50, 70, 255}   // red dark
-	y := C{255, 230, 80, 255}   // yellow
-	yd := C{220, 190, 50, 255}  // yellow dark
-	g := C{80, 220, 120, 255}   // green
-	gd := C{50, 180, 90, 255}   // green dark
-	b := C{100, 150, 255, 255}  // blue
-	bd := C{70, 110, 220, 255}  // blue dark
+	r := C{255, 80, 100, 255}  // red
+	rd := C{200, 50, 70, 255}  // red dark
+	y := C{255, 230, 80, 255}  // yellow
+	yd := C{220, 190, 50, 255} // yellow dark
+	g := C{80, 220, 120, 255}  // green
+	gd := C{50, 180, 90, 255}  // green dark
+	b := C{100, 150, 255, 255} // blue
+	bd := C{70, 110, 220, 255} // blue dark
 	// Pompom with sparkle
 	pm := C{255, 100, 150, 255} // pompom main
 	ps := C{200, 60, 110, 255}  // pompom shadow
@@ -196,15 +196,15 @@ func generateCrown() [][]C {
 
 func generateTopHat() [][]C {
 	o := O
-	m := C{25, 25, 30, 255}    // main black
-	md := C{15, 15, 20, 255}   // black dark
-	h := C{50, 50, 60, 255}    // highlight
-	hb := C{70, 70, 85, 255}   // bright highlight
+	m := C{25, 25, 30, 255}     // main black
+	md := C{15, 15, 20, 255}    // black dark
+	h := C{50, 50, 60, 255}     // highlight
+	hb := C{70, 70, 85, 255}    // bright highlight
 	hw := C{100, 100, 120, 255} // white shine
 	// Satin red band with shine
-	r := C{180, 40, 50, 255}   // red
-	rd := C{130, 25, 35, 255}  // red dark
-	rh := C{220, 80, 90, 255}  // red highlight
+	r := C{180, 40, 50, 255}  // red
+	rd := C{130, 25, 35, 255} // red dark
+	rh := C{220, 80, 90, 255} // red highlight
 	// Gold buckle
 	g := C{255, 215, 80, 255}
 	gd := C{190, 150, 40, 255}
@@ -334,7 +334,7 @@ func generateSparkEffect(size int) [][]C {
 
 	mid := size / 2
 	yb := C{0xFF, 0xFF, 0xC8, 0xFF} // bright
-	ym := Y                          // medium
+	ym := Y                         // medium
 	yd := C{0xFF, 0xDC, 0x50, 0xFF} // dark
 
 	result[0][mid] = yb
@@ -361,17 +361,17 @@ func generateThoughtDot() [][]C {
 
 func generateSunglasses() [][]C {
 	// Aviator style with gradient lens and shine
-	o := O                        // outline
-	f := C{180, 160, 120, 255}    // gold frame
-	fd := C{140, 120, 80, 255}    // frame dark
-	fh := C{220, 200, 160, 255}   // frame highlight
-	fw := C{255, 250, 220, 255}   // frame white shine
+	o := O                      // outline
+	f := C{180, 160, 120, 255}  // gold frame
+	fd := C{140, 120, 80, 255}  // frame dark
+	fh := C{220, 200, 160, 255} // frame highlight
+	fw := C{255, 250, 220, 255} // frame white shine
 	// Gradient lens - darker at top
-	l1 := C{40, 35, 50, 255}      // lens top (darkest)
-	l2 := C{60, 55, 70, 255}      // lens mid-dark
-	l3 := C{80, 75, 90, 255}      // lens mid
-	l4 := C{100, 95, 110, 255}    // lens bottom (lightest)
-	ls := C{140, 160, 180, 200}   // lens shine streak
+	l1 := C{40, 35, 50, 255}    // lens top (darkest)
+	l2 := C{60, 55, 70, 255}    // lens mid-dark
+	l3 := C{80, 75, 90, 255}    // lens mid
+	l4 := C{100, 95, 110, 255}  // lens bottom (lightest)
+	ls := C{140, 160, 180, 200} // lens shine streak
 
 	return [][]C{
 		{X, X, X, o, o, o, o, o, o, X, X, X, o, o, o, o, o, o, X, X, X},
@@ -388,9 +388,9 @@ func generateSunglasses() [][]C {
 func generateDealWithIt() [][]C {
 	// Classic 8-bit pixel glasses - blocky on purpose but with style
 	o := O
-	b := C{5, 5, 8, 255}         // pure black lens
-	f := C{15, 15, 18, 255}      // frame
-	w := C{80, 80, 100, 255}     // reflection
+	b := C{5, 5, 8, 255}     // pure black lens
+	f := C{15, 15, 18, 255}  // frame
+	w := C{80, 80, 100, 255} // reflection
 
 	return [][]C{
 		{X, o, o, o, o, o, o, o, X, X, X, o, o, o, o, o, o, o, X},
@@ -405,9 +405,9 @@ func generateDealWithIt() [][]C {
 
 func generateMustache() [][]C {
 	// 70s/80s "porn stache" - smaller, thinner version
-	m := C{50, 35, 25, 255}       // main brown
-	md := C{30, 20, 12, 255}      // dark brown
-	mh := C{80, 55, 40, 255}      // highlight
+	m := C{50, 35, 25, 255}  // main brown
+	md := C{30, 20, 12, 255} // dark brown
+	mh := C{80, 55, 40, 255} // highlight
 	o := O
 
 	// Smaller, thinner - 12px wide, 3px tall
@@ -420,12 +420,12 @@ func generateMustache() [][]C {
 
 func generateMonocle() [][]C {
 	// Round monocle with thin gold frame, chain pointing straight DOWN
-	g := C{255, 215, 80, 255}    // gold frame (thin 1px)
-	gw := C{255, 255, 220, 255}  // gold sparkle
-	l := C{200, 220, 240, 180}   // lens
-	lh := C{230, 245, 255, 200}  // lens highlight
-	lw := C{255, 255, 255, 220}  // lens white sparkle
-	c := C{200, 180, 120, 255}   // chain
+	g := C{255, 215, 80, 255}   // gold frame (thin 1px)
+	gw := C{255, 255, 220, 255} // gold sparkle
+	l := C{200, 220, 240, 180}  // lens
+	lh := C{230, 245, 255, 200} // lens highlight
+	lw := C{255, 255, 255, 220} // lens white sparkle
+	c := C{200, 180, 120, 255}  // chain
 
 	// Round monocle with thin 1px gold frame
 	return [][]C{
@@ -450,10 +450,10 @@ func generateMonocle() [][]C {
 func generateBorat() [][]C {
 	// The infamous mankini - lime green, U-shaped
 	// Wider (20px), thinner straps (2px), taller to reach shoulders
-	g := C{50, 205, 50, 255}     // lime green
-	gd := C{30, 150, 30, 255}    // green dark
-	gh := C{100, 240, 100, 255}  // green highlight
-	gw := C{180, 255, 180, 255}  // green white shine
+	g := C{50, 205, 50, 255}    // lime green
+	gd := C{30, 150, 30, 255}   // green dark
+	gh := C{100, 240, 100, 255} // green highlight
+	gw := C{180, 255, 180, 255} // green white shine
 	o := O
 
 	// Wide U-shape: thin straps on far edges, curve to small pouch at bottom
@@ -502,10 +502,10 @@ func generateHeadphones() [][]C {
 func generateBeret() [][]C {
 	o := O
 	// Classic French artist beret - burgundy/wine red
-	m := C{120, 40, 50, 255}    // main
-	md := C{90, 25, 35, 255}    // dark
-	mh := C{160, 60, 70, 255}   // highlight
-	mb := C{190, 90, 100, 255}  // bright
+	m := C{120, 40, 50, 255}   // main
+	md := C{90, 25, 35, 255}   // dark
+	mh := C{160, 60, 70, 255}  // highlight
+	mb := C{190, 90, 100, 255} // bright
 
 	return [][]C{
 		{X, X, X, X, X, X, o, o, o, X, X, X, X, X, X},
@@ -522,9 +522,9 @@ func generateBeret() [][]C {
 func generateCatEars() [][]C {
 	o := O
 	// Cute cat ears - pink inside
-	m := C{60, 55, 65, 255}     // main gray
-	md := C{40, 35, 45, 255}    // dark
-	mh := C{85, 80, 95, 255}    // highlight
+	m := C{60, 55, 65, 255}  // main gray
+	md := C{40, 35, 45, 255} // dark
+	mh := C{85, 80, 95, 255} // highlight
 	// Pink inner ear
 	p := C{255, 150, 170, 255}
 	pd := C{220, 110, 130, 255}
@@ -543,9 +543,9 @@ func generateCatEars() [][]C {
 func generatePirateHat() [][]C {
 	o := O
 	// Tricorn pirate hat with skull
-	m := C{30, 25, 35, 255}     // main black
-	md := C{20, 15, 25, 255}    // dark
-	mh := C{50, 45, 60, 255}    // highlight
+	m := C{30, 25, 35, 255}  // main black
+	md := C{20, 15, 25, 255} // dark
+	mh := C{50, 45, 60, 255} // highlight
 	// Gold trim
 	g := C{255, 215, 80, 255}
 	gd := C{200, 160, 40, 255}
@@ -694,10 +694,10 @@ func generateFedora() [][]C {
 func generatePipe() [][]C {
 	o := O
 	// Classic smoking pipe - horizontal stem, bowl at end
-	w := C{100, 65, 40, 255}    // wood brown
-	wd := C{70, 45, 25, 255}    // wood dark
-	wh := C{140, 100, 65, 255}  // wood highlight
-	wb := C{60, 35, 20, 255}    // bowl interior (dark)
+	w := C{100, 65, 40, 255}   // wood brown
+	wd := C{70, 45, 25, 255}   // wood dark
+	wh := C{140, 100, 65, 255} // wood highlight
+	wb := C{60, 35, 20, 255}   // bowl interior (dark)
 	// Smoke wisps
 	s1 := C{220, 220, 230, 160}
 	s2 := C{200, 200, 215, 100}
@@ -723,9 +723,9 @@ func generatePipe() [][]C {
 func generateEyepatch() [][]C {
 	o := O
 	// Small eyepatch with diagonal \ strap
-	b := C{20, 15, 25, 255}  // black patch
-	bd := C{10, 8, 15, 255}  // black dark
-	s := C{50, 40, 30, 255}  // brown strap
+	b := C{20, 15, 25, 255} // black patch
+	bd := C{10, 8, 15, 255} // black dark
+	s := C{50, 40, 30, 255} // brown strap
 
 	return [][]C{
 		// Diagonal strap going \ down-right
@@ -741,10 +741,10 @@ func generateEyepatch() [][]C {
 func generateGlasses3D() [][]C {
 	o := O
 	// Retro red/cyan 3D glasses
-	r := C{220, 50, 50, 200}    // red lens
-	rd := C{180, 30, 30, 200}   // red dark
-	c := C{50, 200, 220, 200}   // cyan lens
-	cd := C{30, 160, 180, 200}  // cyan dark
+	r := C{220, 50, 50, 200}   // red lens
+	rd := C{180, 30, 30, 200}  // red dark
+	c := C{50, 200, 220, 200}  // cyan lens
+	cd := C{30, 160, 180, 200} // cyan dark
 	// White frame
 	f := C{240, 240, 245, 255}
 	fd := C{200, 200, 210, 255}
@@ -764,7 +764,7 @@ func generateGlasses3D() [][]C {
 func generateGroucho() [][]C {
 	o := O
 	// Groucho Marx glasses with eyebrows, nose, and mustache
-	b := C{30, 25, 20, 255}     // black
+	b := C{30, 25, 20, 255} // black
 	// Skin tone nose
 	n := C{230, 190, 160, 255}
 	nd := C{200, 160, 130, 255}
@@ -792,9 +792,9 @@ func generateGroucho() [][]C {
 func generateBandana() [][]C {
 	o := O
 	// Bandana headband with knot and trailing tails
-	r := C{180, 40, 50, 255}   // red fabric
-	rd := C{140, 25, 35, 255}  // red dark
-	rh := C{220, 70, 80, 255}  // red highlight
+	r := C{180, 40, 50, 255}  // red fabric
+	rd := C{140, 25, 35, 255} // red dark
+	rh := C{220, 70, 80, 255} // red highlight
 
 	return [][]C{
 		// Headband wraps around forehead with knot on side
@@ -812,10 +812,10 @@ func generateBandana() [][]C {
 func generateWizardBeard() [][]C {
 	o := O
 	// Long flowing wizard beard - white/gray
-	w := C{240, 240, 245, 255}  // white
-	wd := C{210, 210, 220, 255} // white dark
+	w := C{240, 240, 245, 255}   // white
+	wd := C{210, 210, 220, 255}  // white dark
 	wdd := C{180, 180, 195, 255} // darker
-	wh := C{255, 255, 255, 255} // highlight
+	wh := C{255, 255, 255, 255}  // highlight
 
 	return [][]C{
 		{X, X, X, o, o, o, o, o, o, o, o, o, X, X, X},

@@ -1,14 +1,14 @@
 version: 2
 
-project_name: claude-quest
+project_name: codex-quest
 
 before:
   hooks:
     - go mod tidy
 
 builds:
-  - id: cq
-    binary: cq
+  - id: cxq
+    binary: cxq-{{ .Os }}-{{ .Arch }}
     main: .
     env:
       - CGO_ENABLED=1
@@ -57,8 +57,8 @@ changelog:
 
 release:
   github:
-    owner: Michaelliv
-    name: claude-quest
+    owner: pangin
+    name: codex-quest
   draft: false
   prerelease: auto
   name_template: "v{{ .Version }}"

@@ -18,7 +18,7 @@ type AccessoryPrefs struct {
 
 func getPrefsPath() string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".claude-quest-prefs.json")
+	return filepath.Join(home, prefsFileName)
 }
 
 // getAssetPath returns the path to an asset file, checking both relative to
@@ -31,7 +31,7 @@ func getAssetPath(relativePath string) string {
 		if resolved, err := filepath.EvalSymlinks(exe); err == nil {
 			exeDir = filepath.Dir(resolved)
 		}
-		// npm installs put assets in ../assets relative to bin/cq
+		// npm installs put assets in ../assets relative to bin/cxq
 		npmAssetPath := filepath.Join(exeDir, "..", "assets", relativePath)
 		if _, err := os.Stat(npmAssetPath); err == nil {
 			return npmAssetPath
@@ -49,10 +49,10 @@ func getAssetPath(relativePath string) string {
 const (
 	spriteFrameWidth  = 32
 	spriteFrameHeight = 32
-	spriteMaxFrames   = 12
-	claudeScale       = 2 // Draw Claude 2x bigger
+	spriteMaxFrames   = 24
+	codexScale        = 2 // Draw Codex 2x bigger
 
-	// Mini Claude sprites
+	// Mini Codex sprites
 	miniFrameWidth  = 16
 	miniFrameHeight = 16
 	miniMaxFrames   = 12
@@ -64,12 +64,12 @@ const (
 
 // Particle represents a visual effect particle
 type Particle struct {
-	X, Y     float32
-	VX, VY   float32
-	Life     float32
-	MaxLife  float32
-	Color    rl.Color
-	Size     float32
+	X, Y    float32
+	VX, VY  float32
+	Life    float32
+	MaxLife float32
+	Color   rl.Color
+	Size    float32
 }
 
 // Renderer handles all drawing operations
@@ -111,7 +111,7 @@ type Renderer struct {
 
 	// Trail particles (separate from main particles)
 	trailParticles []Particle
-	lastClaudeX    float32 // For spawning trail behind movement
+	lastCodexX     float32 // For spawning trail behind movement
 
 	// UI state
 	activeRow int // 0 = HAT, 1 = FACE, 2 = AURA, 3 = TRAIL
@@ -128,15 +128,15 @@ type Renderer struct {
 	pickerAnim     float32 // 0.0 = collapsed, 1.0 = expanded
 
 	// Modal picker state
-	pickerModal       bool    // True when modal picker is open
-	pickerModalAnim   float32 // 0.0 = closed, 1.0 = fully open
-	pickerSlot        int     // Currently selected slot (0=HAT, 1=FACE, 2=AURA, 3=TRAIL)
-	pickerItemIndex   [4]int  // Selected item index per slot (-1 = none)
-	pickerScrollPos   [4]int  // Scroll position per slot (for when items overflow)
-	pickerPreviewHat  int     // Preview hat while browsing (-1 = use current)
-	pickerPreviewFace int     // Preview face while browsing
-	pickerPreviewAura int     // Preview aura while browsing
-	pickerPreviewTrail int    // Preview trail while browsing
+	pickerModal        bool    // True when modal picker is open
+	pickerModalAnim    float32 // 0.0 = closed, 1.0 = fully open
+	pickerSlot         int     // Currently selected slot (0=HAT, 1=FACE, 2=AURA, 3=TRAIL)
+	pickerItemIndex    [4]int  // Selected item index per slot (-1 = none)
+	pickerScrollPos    [4]int  // Scroll position per slot (for when items overflow)
+	pickerPreviewHat   int     // Preview hat while browsing (-1 = use current)
+	pickerPreviewFace  int     // Preview face while browsing
+	pickerPreviewAura  int     // Preview aura while browsing
+	pickerPreviewTrail int     // Preview trail while browsing
 }
 
 // SetProfile sets the career profile for ownership checks
@@ -203,7 +203,7 @@ func NewRenderer(config *Config) *Renderer {
 	}
 
 	// Try to load sprite sheet
-	spritePath := getAssetPath("claude/spritesheet.png")
+	spritePath := getAssetPath("codex/spritesheet.png")
 	if _, err := os.Stat(spritePath); err == nil {
 		r.spriteSheet = rl.LoadTexture(spritePath)
 		r.hasSprites = true
@@ -213,7 +213,7 @@ func NewRenderer(config *Config) *Renderer {
 	}
 
 	// Try to load mini sprite sheet
-	miniSpritePath := getAssetPath("claude/mini_spritesheet.png")
+	miniSpritePath := getAssetPath("codex/mini_spritesheet.png")
 	if _, err := os.Stat(miniSpritePath); err == nil {
 		r.miniSpriteSheet = rl.LoadTexture(miniSpritePath)
 		r.hasMiniSprites = true
@@ -273,7 +273,7 @@ func (r *Renderer) Draw(state *AnimationState) {
 	// Draw background
 	r.drawBackground()
 
-	// Update and draw trail particles (behind Claude)
+	// Update and draw trail particles (behind Codex)
 	r.updateTrailParticles()
 	r.drawTrailParticles()
 	r.spawnTrailParticles(state)
@@ -282,16 +282,16 @@ func (r *Renderer) Draw(state *AnimationState) {
 	r.updateParticles()
 	r.drawParticles()
 
-	// Draw aura behind Claude
+	// Draw aura behind Codex
 	r.drawAura(state)
 
-	// Draw Claude sprite
-	r.drawClaude(state)
+	// Draw Codex sprite
+	r.drawCodex(state)
 
 	// Draw face accessory (under hat)
 	r.drawFace(state)
 
-	// Draw hat on top of Claude
+	// Draw hat on top of Codex
 	r.drawHat(state)
 
 	// Spawn new particles based on animation
@@ -302,7 +302,6 @@ func (r *Renderer) Draw(state *AnimationState) {
 		r.drawDebug(state)
 	}
 }
-
 
 func (r *Renderer) drawBackground() {
 	// Always use parallax background (Quest mode)

@@ -7,17 +7,17 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-// Claude position constants (same as in renderer_claude.go)
+// Codex position constants (same as in renderer_codex.go)
 const (
-	claudeX = screenWidth/2 - spriteFrameWidth
-	claudeY = screenHeight - spriteFrameHeight*claudeScale - 24
+	codexX = screenWidth/2 - spriteFrameWidth
+	codexY = screenHeight - spriteFrameHeight*codexScale - 24
 )
 
 // ============================================================================
-// AURA SYSTEM - Particle effects around Claude
+// AURA SYSTEM - Particle effects around Codex
 // ============================================================================
 
-// drawAura renders the currently selected aura around Claude
+// drawAura renders the currently selected aura around Codex
 func (r *Renderer) drawAura(state *AnimationState) {
 	// Use preview aura when modal picker is open
 	auraIdx := r.GetPreviewAura()
@@ -27,8 +27,8 @@ func (r *Renderer) drawAura(state *AnimationState) {
 
 	auraName := r.auraNames[auraIdx]
 	time := float32(rl.GetTime())
-	cx := float32(claudeX + spriteFrameWidth)  // Center X
-	cy := float32(claudeY + spriteFrameHeight) // Center Y
+	cx := float32(codexX + spriteFrameWidth)  // Center X
+	cy := float32(codexY + spriteFrameHeight) // Center Y
 
 	switch auraName {
 	case "aura_pixel":
@@ -50,7 +50,7 @@ func (r *Renderer) drawAura(state *AnimationState) {
 	}
 }
 
-// drawAuraPixelDust - Bright white/yellow sparkles around Claude
+// drawAuraPixelDust - Bright white/yellow sparkles around Codex
 func (r *Renderer) drawAuraPixelDust(cx, cy, time float32) {
 	// Outer glow ring
 	for i := 0; i < 24; i++ {
@@ -73,7 +73,7 @@ func (r *Renderer) drawAuraPixelDust(cx, cy, time float32) {
 	}
 }
 
-// drawAuraFlame - Blazing fire engulfing Claude
+// drawAuraFlame - Blazing fire engulfing Codex
 func (r *Renderer) drawAuraFlame(cx, cy, time float32) {
 	baseY := cy + 10
 
@@ -82,7 +82,7 @@ func (r *Renderer) drawAuraFlame(cx, cy, time float32) {
 	rl.DrawCircle(int32(cx), int32(cy-10), 35, rl.Color{R: 255, G: 100, B: 20, A: uint8(30 * glowPulse)})
 	rl.DrawCircle(int32(cx), int32(cy-10), 25, rl.Color{R: 255, G: 150, B: 50, A: uint8(50 * glowPulse)})
 
-	// Layer 2: Back flames (darker, behind Claude)
+	// Layer 2: Back flames (darker, behind Codex)
 	for i := 0; i < 7; i++ {
 		seed := float64(i) * 1.3
 		tongueX := cx + float32(i-3)*9
@@ -251,7 +251,7 @@ func (r *Renderer) drawAuraFrost(cx, cy, time float32) {
 
 // drawAuraElectric - Crackling yellow lightning aura
 func (r *Renderer) drawAuraElectric(cx, cy, time float32) {
-	// Bright yellow glow around Claude - larger
+	// Bright yellow glow around Codex - larger
 	glowAlpha := uint8(60 + 40*math.Sin(float64(time*4.0)))
 	rl.DrawCircle(int32(cx), int32(cy-20), 38, rl.Color{R: 255, G: 240, B: 100, A: glowAlpha / 5})
 	rl.DrawCircle(int32(cx), int32(cy-20), 28, rl.Color{R: 255, G: 255, B: 150, A: glowAlpha / 3})
@@ -267,7 +267,7 @@ func (r *Renderer) drawAuraElectric(cx, cy, time float32) {
 		angle := float64(time*2.0) + float64(i)*0.628 // Spread evenly (10 bolts)
 		length := 32.0 + 15.0*math.Sin(float64(time*5.0)+float64(i))
 
-		// Start point near Claude
+		// Start point near Codex
 		x1 := cx + float32(math.Cos(angle)*8)
 		y1 := cy - 20 + float32(math.Sin(angle)*8)
 
@@ -417,10 +417,10 @@ func (r *Renderer) drawAuraRainbow(cx, cy, time float32) {
 }
 
 // ============================================================================
-// TRAIL SYSTEM - Particles behind Claude when walking
+// TRAIL SYSTEM - Particles behind Codex when walking
 // ============================================================================
 
-// spawnTrailParticles spawns trail particles when Claude is walking
+// spawnTrailParticles spawns trail particles when Codex is walking
 func (r *Renderer) spawnTrailParticles(state *AnimationState) {
 	// Use preview trail when modal picker is open
 	trailIdx := r.GetPreviewTrail()
@@ -439,11 +439,11 @@ func (r *Renderer) spawnTrailParticles(state *AnimationState) {
 	}
 
 	trailName := r.trailNames[trailIdx]
-	// Spawn position at Claude's feet (Claude walks right, dust kicks back left)
-	// Actual Claude: y = 160 - 64 + 10 = 106, feet at y = 170 (floor line)
-	// Spawn just above floor behind Claude's center
-	spawnX := float32(claudeX + 15 + rand.Intn(10)) // 143-153, behind Claude's center
-	spawnY := float32(166 + rand.Intn(4))           // 166-170, at/just above foot level
+	// Spawn position at Codex's feet (Codex walks right, dust kicks back left)
+	// Actual Codex: y = 160 - 64 + 10 = 106, feet at y = 170 (floor line)
+	// Spawn just above floor behind Codex's center
+	spawnX := float32(codexX + 15 + rand.Intn(10)) // 143-153, behind Codex's center
+	spawnY := float32(166 + rand.Intn(4))          // 166-170, at/just above foot level
 
 	switch trailName {
 	case "trail_sparkle":
@@ -466,7 +466,7 @@ func (r *Renderer) spawnTrailSparkle(x, y float32) {
 	p := Particle{
 		X:       x,
 		Y:       y + float32(rand.Intn(4)-2),
-		VX:      float32(-rand.Float32()*3 - 1),    // Move LEFT (negative)
+		VX:      float32(-rand.Float32()*3 - 1),     // Move LEFT (negative)
 		VY:      float32(-rand.Float32()*1.5 - 0.5), // Slight arc up
 		Life:    0.9,
 		MaxLife: 0.9,
@@ -535,7 +535,7 @@ func (r *Renderer) spawnTrailPixel(x, y float32) {
 	p := Particle{
 		X:       x,
 		Y:       y + float32(rand.Intn(3)),
-		VX:      float32(-rand.Float32()*3 - 1),   // Move LEFT
+		VX:      float32(-rand.Float32()*3 - 1),     // Move LEFT
 		VY:      float32(-rand.Float32()*1.5 - 0.3), // Slight arc
 		Life:    0.8,
 		MaxLife: 0.8,
@@ -552,7 +552,7 @@ func (r *Renderer) spawnTrailRainbow(x, y float32) {
 	p := Particle{
 		X:       x,
 		Y:       y + float32(rand.Intn(3)),
-		VX:      float32(-rand.Float32()*3 - 1),  // Move LEFT
+		VX:      float32(-rand.Float32()*3 - 1),     // Move LEFT
 		VY:      float32(-rand.Float32()*1.5 - 0.5), // Arc up
 		Life:    1.0,
 		MaxLife: 1.0,

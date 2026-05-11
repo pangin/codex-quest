@@ -8,7 +8,6 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-
 // loadHats loads all hat textures from assets/accessories/hats
 func (r *Renderer) loadHats() {
 	hatsDir := getAssetPath("accessories/hats")
@@ -160,7 +159,6 @@ func (r *Renderer) CycleActive(direction int) {
 	r.SavePrefs()
 }
 
-
 // TogglePicker expands/collapses the accessory picker
 func (r *Renderer) TogglePicker() {
 	r.pickerExpanded = !r.pickerExpanded
@@ -186,7 +184,6 @@ func (r *Renderer) UpdatePickerAnim(dt float32) {
 		}
 	}
 }
-
 
 // SavePrefs saves current accessory choices to disk
 func (r *Renderer) SavePrefs() {

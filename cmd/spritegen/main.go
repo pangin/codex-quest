@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-// Type alias for cleaner pattern definitions
+// Type alias for cleaner pattern definitions.
 type C = color.RGBA
 
 const (
@@ -17,64 +17,108 @@ const (
 	maxFrames   = 24
 )
 
-// Animation frame counts (must match animations.go) - doubled for smoothness
+// Animation frame counts (must match animations.go).
 // Idle, Enter, Casting, Attack, Writing, Victory, Hurt, Thinking, Walk, VictoryPose
 var frameCounts = []int{16, 20, 16, 16, 16, 20, 16, 16, 16, 20}
 
-// Claude's official color palette from Clawdachi
+// Codex Pet-inspired palette. The short names are shared by the accessory
+// generators, so keep them stable even though the colors are now blue.
 var (
-	P = C{0xFF, 0x99, 0x33, 0xFF} // Primary Orange #FF9933
-	S = C{0xCC, 0x66, 0x00, 0xFF} // Shadow Orange #CC6600
-	H = C{0xFF, 0xBB, 0x77, 0xFF} // Highlight Orange #FFBB77
-	O = C{0x22, 0x22, 0x22, 0xFF} // Outline/Eyes #222222
-	M = C{0x44, 0x22, 0x00, 0xFF} // Mouth #442200
-	W = C{0xFF, 0xFF, 0xFF, 0xFF} // White
-	G = C{0x00, 0xFF, 0x88, 0xFF} // Terminal Green #00FF88
-	Y = C{0xFF, 0xF5, 0x96, 0xFF} // Spark Yellow
+	P = C{0x5D, 0x8D, 0xFF, 0xFF} // Primary Codex blue
+	S = C{0x31, 0x4B, 0xC9, 0xFF} // Shadow blue
+	H = C{0x9D, 0xBC, 0xFF, 0xFF} // Soft highlight blue
+	O = C{0x0B, 0x16, 0x38, 0xFF} // Deep navy outline/panel
+	M = C{0x15, 0x2A, 0x66, 0xFF} // Mid navy detail
+	W = C{0xF3, 0xFA, 0xFF, 0xFF} // Cool white
+	G = C{0x72, 0xF6, 0xFF, 0xFF} // Terminal cyan
+	Y = C{0xFF, 0xEA, 0x82, 0xFF} // Spark yellow
 	X = C{0x00, 0x00, 0x00, 0x00} // Transparent
+
+	panelFill = C{0x10, 0x1E, 0x4A, 0xFF}
+	panelHi   = C{0x25, 0x3B, 0x7E, 0xFF}
+	glowBlue  = C{0xB8, 0xF8, 0xFF, 0xFF}
 )
+
+type petFace int
+
+const (
+	facePrompt petFace = iota
+	faceBlink
+	faceHappy
+	faceBars
+	faceX
+	faceWorry
+	faceSquint
+)
+
+type armPose int
+
+const (
+	armsIdle armPose = iota
+	armsUp
+	armsCast
+	armsPunch
+	armsTyping
+	armsHurt
+	armsProud
+)
+
+type petPose struct {
+	X, Y    int
+	SquashX int
+	SquashY int
+	Face    petFace
+	Arms    armPose
+	Legs    int
+	Laptop  bool
+}
 
 func createImage(width, height int) *image.RGBA {
 	return image.NewRGBA(image.Rect(0, 0, width, height))
 }
 
 func main() {
-	// Create sprite sheet
 	width := frameWidth * maxFrames
 	height := frameHeight * numAnims
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 
-	// Fill transparent
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			img.Set(x, y, X)
 		}
 	}
 
-	// Generate each animation
 	for anim := 0; anim < numAnims; anim++ {
 		for frame := 0; frame < frameCounts[anim]; frame++ {
 			drawFrame(img, anim, frame)
 		}
 	}
 
-	// Save
-	os.MkdirAll("assets/claude", 0755)
-	f, _ := os.Create("assets/claude/spritesheet.png")
+	os.MkdirAll("assets/codex", 0755)
+	f, _ := os.Create("assets/codex/spritesheet.png")
 	defer f.Close()
 	png.Encode(f, img)
 
-	// Generate accessories and effects
+	generateAccessoriesWithLegacyPalette()
+	generateMiniCodex()
+	generateEnemies()
+	generateChest()
+}
+
+func generateAccessoriesWithLegacyPalette() {
+	current := []C{P, S, H, O, M, W, G, Y}
+	P = C{0xFF, 0x99, 0x33, 0xFF}
+	S = C{0xCC, 0x66, 0x00, 0xFF}
+	H = C{0xFF, 0xBB, 0x77, 0xFF}
+	O = C{0x22, 0x22, 0x22, 0xFF}
+	M = C{0x44, 0x22, 0x00, 0xFF}
+	W = C{0xFF, 0xFF, 0xFF, 0xFF}
+	G = C{0x00, 0xFF, 0x88, 0xFF}
+	Y = C{0xFF, 0xF5, 0x96, 0xFF}
+
 	generateAccessories()
 
-	// Generate mini Claude for subagents
-	generateMiniClaude()
-
-	// Generate enemy sprites
-	generateEnemies()
-
-	// Generate treasure chest
-	generateChest()
+	P, S, H, O, M, W, G, Y = current[0], current[1], current[2], current[3], current[4], current[5], current[6], current[7]
 }
 
 func drawFrame(img *image.RGBA, anim, frame int) {
@@ -82,1088 +126,557 @@ func drawFrame(img *image.RGBA, anim, frame int) {
 	offsetY := anim * frameHeight
 
 	switch anim {
-	case 0: // Idle - smooth breathing with blink
-		// 16 frames: breathe in (0-7), breathe out (8-15), blink at frame 12-14
-		breathCurve := []int{0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0}
-		breathOffset := breathCurve[frame]
-		drawClaudeBlob(img, offsetX, offsetY, breathOffset, false, false)
-		// Blink
-		if frame >= 12 && frame <= 14 {
-			drawBlink(img, offsetX, offsetY+breathOffset, frame-12)
-		}
-
-	case 1: // Enter - pop in / materialize effect
-		drawClaudeEnter(img, offsetX, offsetY, frame)
-
-	case 2: // Casting - reading/searching (arms up, sparkles)
-		drawClaudeCasting(img, offsetX, offsetY, frame)
-
-	case 3: // Attack - bash command (punch motion)
-		drawClaudeAttack(img, offsetX, offsetY, frame)
-
-	case 4: // Writing - edit/write (typing motion)
-		drawClaudeWriting(img, offsetX, offsetY, frame)
-
-	case 5: // Victory - success (jumping)
-		drawClaudeVictory(img, offsetX, offsetY, frame)
-
-	case 6: // Hurt - error (knocked back)
-		drawClaudeHurt(img, offsetX, offsetY, frame)
-
-	case 7: // Thinking - processing
-		drawClaudeThinking(img, offsetX, offsetY, frame)
-
-	case 8: // Walk - infinite walking cycle
-		drawClaudeWalk(img, offsetX, offsetY, frame)
-
-	case 9: // Victory Pose - triumphant fist pump celebration
-		drawClaudeVictoryPose(img, offsetX, offsetY, frame)
+	case 0:
+		drawCodexIdle(img, offsetX, offsetY, frame)
+	case 1:
+		drawCodexEnter(img, offsetX, offsetY, frame)
+	case 2:
+		drawCodexCasting(img, offsetX, offsetY, frame)
+	case 3:
+		drawCodexAttack(img, offsetX, offsetY, frame)
+	case 4:
+		drawCodexWriting(img, offsetX, offsetY, frame)
+	case 5:
+		drawCodexVictory(img, offsetX, offsetY, frame)
+	case 6:
+		drawCodexHurt(img, offsetX, offsetY, frame)
+	case 7:
+		drawCodexThinking(img, offsetX, offsetY, frame)
+	case 8:
+		drawCodexWalk(img, offsetX, offsetY, frame)
+	case 9:
+		drawCodexVictoryPose(img, offsetX, offsetY, frame)
 	}
 }
 
-// Draw the base Claude blob - a cute rectangular crab-like creature
-func drawClaudeBlob(img *image.RGBA, ox, oy, breathOffset int, armsUp, legsWide bool) {
-	// Body is wider rectangle - more horizontal like the reference
-	// Body: 18 pixels wide, 10 pixels tall
-
-	bodyTop := 12 - breathOffset
-	bodyBottom := 22
-	bodyLeft := 7
-	bodyRight := 25
-
-	// Draw main body
-	for y := bodyTop; y < bodyBottom; y++ {
-		for x := bodyLeft; x < bodyRight; x++ {
-			py := oy + y
-			px := ox + x
-
-			// Determine color based on position (shading)
-			var c color.RGBA
-			if x < bodyLeft+2 {
-				c = S // Left shadow
-			} else if x >= bodyRight-2 {
-				c = H // Right highlight
-			} else if y < bodyTop+2 {
-				c = H // Top highlight
-			} else if y >= bodyBottom-2 {
-				c = S // Bottom shadow
-			} else {
-				c = P // Main body
-			}
-			img.Set(px, py, c)
-		}
-	}
-
-	// Eyes (3x4 dark rectangles)
-	eyeY := oy + 13 - breathOffset
-	// Left eye at x=11
-	for dy := 0; dy < 4; dy++ {
-		for dx := 0; dx < 3; dx++ {
-			img.Set(ox+11+dx, eyeY+dy, O)
-		}
-	}
-	// Right eye at x=18
-	for dy := 0; dy < 4; dy++ {
-		for dx := 0; dx < 3; dx++ {
-			img.Set(ox+18+dx, eyeY+dy, O)
-		}
-	}
-
-	// Arms (small 3x3 stubs on sides, right at body edge)
-	armY := oy + 15 - breathOffset // vertically centered on body
-	if armsUp {
-		armY = oy + 10 - breathOffset
-	}
-
-	// Left arm - just to the left of body (body starts at x=7)
-	for dy := 0; dy < 3; dy++ {
-		for dx := 0; dx < 3; dx++ {
-			c := P
-			if dx == 0 {
-				c = S
-			}
-			img.Set(ox+4+dx, armY+dy, c) // x=4,5,6
-		}
-	}
-	// Right arm - just to the right of body (body ends at x=25)
-	for dy := 0; dy < 3; dy++ {
-		for dx := 0; dx < 3; dx++ {
-			c := P
-			if dx == 2 {
-				c = H
-			}
-			img.Set(ox+25+dx, armY+dy, c) // x=25,26,27
-		}
-	}
-
-	// 4 Legs - 2 on left, 2 on right, with gap in middle
-	legY := oy + 22
-	spread := 0
-	if legsWide {
-		spread = 1
-	}
-
-	// Left side - 2 legs (at positions 8-9 and 11-12)
-	for dy := 0; dy < 5; dy++ {
-		img.Set(ox+8-spread, legY+dy, S)
-		img.Set(ox+9-spread, legY+dy, P)
-	}
-	for dy := 0; dy < 5; dy++ {
-		img.Set(ox+11, legY+dy, S)
-		img.Set(ox+12, legY+dy, P)
-	}
-	// Right side - 2 legs (at positions 19-20 and 22-23)
-	for dy := 0; dy < 5; dy++ {
-		img.Set(ox+19, legY+dy, P)
-		img.Set(ox+20, legY+dy, H)
-	}
-	for dy := 0; dy < 5; dy++ {
-		img.Set(ox+22+spread, legY+dy, P)
-		img.Set(ox+23+spread, legY+dy, H)
-	}
+func defaultPose() petPose {
+	return petPose{Face: facePrompt, Arms: armsIdle, Legs: 0}
 }
 
-func drawClaudeEnter(img *image.RGBA, ox, oy, frame int) {
-	// 20 frame pop-in: sparkles (0-7), materialize (8-14), bounce settle (15-19)
+func drawCodexIdle(img *image.RGBA, ox, oy, frame int) {
+	bob := []int{0, 0, 0, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0}
+	pose := defaultPose()
+	pose.Y = bob[frame%len(bob)]
+	if frame >= 12 && frame <= 14 {
+		pose.Face = faceBlink
+	}
+	drawCodexPetBase(img, ox, oy, pose)
+}
+
+func drawCodexEnter(img *image.RGBA, ox, oy, frame int) {
+	if frame < 5 {
+		drawSparkle(img, ox+16, oy+17-frame, Y)
+		drawSparkle(img, ox+10+frame, oy+22-frame/2, W)
+		drawSparkle(img, ox+22-frame, oy+20-frame/2, G)
+		return
+	}
 	if frame < 8 {
-		// Sparkles appearing - more frames, smoother build
-		numSparkles := frame + 1
-		sparkPositions := [][]int{
-			{16, 16}, {14, 14}, {18, 18}, {12, 12},
-			{20, 12}, {10, 16}, {22, 16}, {16, 20},
-		}
-		for i := 0; i < numSparkles && i < len(sparkPositions); i++ {
-			p := sparkPositions[i]
-			if (frame+i)%2 == 0 {
-				img.Set(ox+p[0], oy+p[1], Y)
-			} else {
-				img.Set(ox+p[0], oy+p[1], W)
-			}
-		}
-	} else if frame < 15 {
-		// Materialize with squash-stretch
-		progress := frame - 8 // 0-6
-		squash := []int{3, 2, 1, 0, -1, 0, 0}[progress]
-		drawBlobSquashed(img, ox, oy, 0, squash)
-		// Fading sparkles
-		if progress < 4 {
-			img.Set(ox+6, oy+10, Y)
-			img.Set(ox+26, oy+12, Y)
-		}
+		y := oy + 22 - (frame-5)*2
+		drawShadedRoundedRect(img, ox+13, y, 6, 4, P)
+		drawSparkle(img, ox+8, oy+14, G)
+		drawSparkle(img, ox+24, oy+12, Y)
+		return
+	}
+
+	pose := defaultPose()
+	if frame < 15 {
+		settleY := []int{3, 2, 1, 0, -1, 0, 0}
+		squashX := []int{2, 1, 1, 0, 0, 0, 0}
+		squashY := []int{-1, 0, 0, 0, 1, 0, 0}
+		idx := frame - 8
+		pose.Y = settleY[idx]
+		pose.SquashX = squashX[idx]
+		pose.SquashY = squashY[idx]
 	} else {
-		// Settle bounce
-		bounce := []int{-2, -1, 0, 0, 0}[frame-15]
-		drawClaudeBlob(img, ox, oy+bounce, 0, false, false)
+		bounce := []int{-2, -1, 0, 0, 0}
+		pose.Y = bounce[frame-15]
+	}
+	drawCodexPetBase(img, ox, oy, pose)
+	if frame < 12 {
+		drawSparkle(img, ox+6, oy+9, Y)
+		drawSparkle(img, ox+26, oy+12, G)
 	}
 }
 
-// drawClaudeWalk draws a 16-frame walk cycle with each leg moving independently
-// Wave pattern flows through legs: outer-left -> inner-left -> inner-right -> outer-right
-func drawClaudeWalk(img *image.RGBA, ox, oy, frame int) {
-	// Subtle body bob from leg motion
-	bobCurve := []int{0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0}
-	bob := bobCurve[frame]
+func drawCodexCasting(img *image.RGBA, ox, oy, frame int) {
+	pose := defaultPose()
+	pose.Face = faceBars
+	pose.Arms = armsCast
 
-	// Draw body
-	bodyTop := 12 + bob
-	bodyBottom := 22 + bob
-
-	for y := bodyTop; y < bodyBottom; y++ {
-		for x := 7; x < 25; x++ {
-			py := oy + y
-			px := ox + x
-			var c C
-			if x < 9 {
-				c = S
-			} else if x >= 23 {
-				c = H
-			} else if y < bodyTop+2 {
-				c = H
-			} else if y >= bodyBottom-2 {
-				c = S
-			} else {
-				c = P
-			}
-			img.Set(px, py, c)
-		}
+	if frame < 5 {
+		pose.Y = []int{2, 2, 1, 0, -1}[frame]
+		pose.SquashX = []int{1, 1, 0, 0, 0}[frame]
+		pose.SquashY = []int{-1, -1, 0, 0, 1}[frame]
+	} else if frame < 13 {
+		pose.Y = []int{-2, -3, -3, -2, -2, -3, -2, -2}[frame-5]
+	} else {
+		pose.Y = []int{-1, 0, 0}[frame-13]
+		pose.Arms = armsIdle
 	}
 
-	// Eyes
-	eyeY := oy + 13 + bob
-	for dy := 0; dy < 4; dy++ {
-		for dx := 0; dx < 3; dx++ {
-			img.Set(ox+11+dx, eyeY+dy, O)
-			img.Set(ox+18+dx, eyeY+dy, O)
-		}
-	}
-
-	// Arms - slight bob
-	armY := oy + 15 + bob
-	for dy := 0; dy < 3; dy++ {
-		img.Set(ox+4, armY+dy, S)
-		img.Set(ox+5, armY+dy, P)
-		img.Set(ox+6, armY+dy, P)
-		img.Set(ox+25, armY+dy, P)
-		img.Set(ox+26, armY+dy, P)
-		img.Set(ox+27, armY+dy, H)
-	}
-
-	// 4 legs - each has independent timing, wave flows through
-	// Each leg cycle: plant (0-3) -> lift (4-5) -> swing (6-7) -> plant
-	// Legs are offset by 4 frames each for wave effect
-	legY := oy + 22 + bob
-
-	// Leg motion: lift amount and forward/back position
-	// 16 frame cycle per leg, but each leg starts at different phase
-	legCycle := func(phase int) (lift, slide int) {
-		p := phase % 16
-		// Smoother curve: mostly planted, brief lift and swing
-		lifts := []int{0, 0, 0, 0, 0, 0, 1, 2, 2, 1, 0, 0, 0, 0, 0, 0}
-		slides := []int{1, 1, 1, 1, 0, 0, 0, -1, -1, 0, 0, 1, 1, 1, 1, 1}
-		return lifts[p], slides[p]
-	}
-
-	// Each leg offset by 4 frames - creates wave from left to right
-	l1Lift, l1Slide := legCycle(frame)      // outer left
-	l2Lift, l2Slide := legCycle(frame + 4)  // inner left
-	l3Lift, l3Slide := legCycle(frame + 8)  // inner right
-	l4Lift, l4Slide := legCycle(frame + 12) // outer right
-
-	// Draw legs
-	// Leg 1 - outer left (x=8-9)
-	for dy := 0; dy < 5; dy++ {
-		img.Set(ox+8+l1Slide, legY+dy-l1Lift, S)
-		img.Set(ox+9+l1Slide, legY+dy-l1Lift, P)
-	}
-	// Leg 2 - inner left (x=11-12)
-	for dy := 0; dy < 5; dy++ {
-		img.Set(ox+11+l2Slide, legY+dy-l2Lift, S)
-		img.Set(ox+12+l2Slide, legY+dy-l2Lift, P)
-	}
-	// Leg 3 - inner right (x=19-20)
-	for dy := 0; dy < 5; dy++ {
-		img.Set(ox+19+l3Slide, legY+dy-l3Lift, P)
-		img.Set(ox+20+l3Slide, legY+dy-l3Lift, H)
-	}
-	// Leg 4 - outer right (x=22-23)
-	for dy := 0; dy < 5; dy++ {
-		img.Set(ox+22+l4Slide, legY+dy-l4Lift, P)
-		img.Set(ox+23+l4Slide, legY+dy-l4Lift, H)
-	}
-}
-
-func drawClaudeCasting(img *image.RGBA, ox, oy, frame int) {
-	// 16 frame casting: wind up (0-4), arms up magic (5-12), settle (13-15)
-	switch {
-	case frame < 5: // Wind up - squat then stretch up
-		squash := []int{-1, -2, -1, 1, 2}[frame]
-		drawBlobSquashed(img, ox, oy+1, 0, squash)
-
-	case frame < 13: // Magic casting with arms up
-		// Slight float
-		floatY := []int{-1, -2, -2, -2, -1, -1, -2, -2}[frame-5]
-		drawClaudeBlob(img, ox, oy+floatY, 0, true, false)
-
-		// Rotating sparkle pattern
-		sparkPhase := frame - 5
-		sparkRadius := 10
+	drawCodexPetBase(img, ox, oy, pose)
+	if frame >= 5 && frame < 13 {
+		phase := frame - 5
 		for i := 0; i < 6; i++ {
-			angle := (sparkPhase*30 + i*60) % 360
-			// Simple angle to x,y
-			sx := ox + 16 + (sparkRadius * simpleCos(angle) / 100)
-			sy := oy + 8 + floatY + (sparkRadius * simpleSin(angle) / 100)
+			angle := (phase*30 + i*60) % 360
+			x := ox + 16 + simpleCos(angle)*10/100
+			y := oy + 8 + pose.Y + simpleSin(angle)*8/100
 			if (i+frame)%2 == 0 {
-				img.Set(sx, sy, Y)
+				drawSparkle(img, x, y, G)
 			} else {
-				img.Set(sx, sy, W)
+				drawSparkle(img, x, y, Y)
 			}
 		}
-
-		// Central glow
-		if frame%2 == 0 {
-			img.Set(ox+16, oy+6+floatY, W)
-		}
-
-	default: // Settle back down
-		settleY := []int{-1, 0, 0}[frame-13]
-		drawClaudeBlob(img, ox, oy+settleY, 0, false, false)
 	}
+}
+
+func drawCodexAttack(img *image.RGBA, ox, oy, frame int) {
+	if frame == 7 {
+		drawCodexPetSmear(img, ox, oy)
+		drawImpactBurst(img, ox+30, oy+15)
+		return
+	}
+
+	pose := defaultPose()
+	pose.Face = faceSquint
+	pose.Arms = armsPunch
+	switch {
+	case frame < 3:
+		pose.Y = []int{1, 2, 2}[frame]
+		pose.X = -frame
+		pose.SquashX = 1
+		pose.SquashY = -1
+	case frame < 5:
+		pose.Y = 3
+		pose.X = -2
+		pose.SquashX = 2
+		pose.SquashY = -1
+	case frame < 7:
+		pose.Y = []int{2, 1}[frame-5]
+	case frame < 10:
+		pose.X = 2
+		pose.Y = 1
+	case frame < 14:
+		pose.X = []int{1, 1, 0, 0}[frame-10]
+		pose.Y = []int{-1, 0, 1, 0}[frame-10]
+		pose.Arms = armsIdle
+	default:
+		pose.Y = []int{-1, 0}[frame-14]
+		pose.Face = facePrompt
+		pose.Arms = armsIdle
+	}
+
+	drawCodexPetBase(img, ox, oy, pose)
+	if frame >= 8 && frame < 11 {
+		drawImpactBurst(img, ox+30, oy+15)
+	}
+}
+
+func drawCodexWriting(img *image.RGBA, ox, oy, frame int) {
+	bob := []int{0, -1, -1, 0, 0, -1, -1, 0, 0, -1, -1, 0, 0, -1, 0, 0}
+	pose := defaultPose()
+	pose.Y = bob[frame%len(bob)]
+	pose.Face = facePrompt
+	pose.Arms = armsTyping
+	pose.Laptop = true
+	if frame%4 == 1 || frame%4 == 2 {
+		pose.Face = faceBars
+	}
+	drawCodexPetBase(img, ox, oy, pose)
+	if frame%4 == 0 {
+		setPixel(img, ox+23, oy+22+pose.Y, G)
+	} else if frame%4 == 2 {
+		setPixel(img, ox+24, oy+21+pose.Y, G)
+	}
+}
+
+func drawCodexVictory(img *image.RGBA, ox, oy, frame int) {
+	pose := defaultPose()
+	pose.Face = faceHappy
+	pose.Arms = armsUp
+
+	switch {
+	case frame < 4:
+		pose.Y = []int{2, 2, 1, 0}[frame]
+		pose.SquashX = 1
+		pose.SquashY = -1
+	case frame < 9:
+		pose.Y = []int{0, -2, -4, -6, -7}[frame-4]
+		pose.SquashY = 1
+	case frame < 12:
+		pose.X = []int{0, 1, 0}[frame-9]
+		pose.Y = -7
+	case frame < 16:
+		pose.Y = []int{-6, -4, -2, 0}[frame-12]
+	default:
+		pose.Y = []int{2, 0, -1, 0}[frame-16]
+		if frame > 17 {
+			pose.Arms = armsIdle
+		}
+	}
+
+	drawCodexPetBase(img, ox, oy, pose)
+	if frame >= 6 && frame < 18 {
+		drawSparkle(img, ox+4, oy+9+pose.Y, Y)
+		drawSparkle(img, ox+28, oy+10+pose.Y, G)
+	}
+}
+
+func drawCodexHurt(img *image.RGBA, ox, oy, frame int) {
+	pose := defaultPose()
+	pose.Face = faceX
+	pose.Arms = armsHurt
+
+	if frame < 3 {
+		pose.Y = 2
+		pose.SquashX = -1
+		pose.SquashY = -1
+	} else if frame < 9 {
+		pose.X = -[]int{2, 5, 7, 8, 7, 5}[frame-3]
+		pose.Y = []int{0, -1, -1, 0, 1, 0}[frame-3]
+	} else {
+		idx := frame - 9
+		pose.X = -[]int{4, 3, 2, 1, 0, 0, 0}[idx]
+		pose.Y = []int{-1, 0, 1, 0, -1, 0, 0}[idx]
+		if frame > 13 {
+			pose.Face = faceWorry
+			pose.Arms = armsIdle
+		}
+	}
+
+	drawCodexPetBase(img, ox, oy, pose)
+	if frame < 10 {
+		drawSparkle(img, ox+28+pose.X/2, oy+8+pose.Y, Y)
+		drawSparkle(img, ox+25+pose.X/2, oy+5+pose.Y, W)
+	}
+}
+
+func drawCodexThinking(img *image.RGBA, ox, oy, frame int) {
+	sway := []int{0, 0, 1, 1, 1, 1, 0, 0, 0, 0, -1, -1, -1, -1, 0, 0}
+	bob := []int{0, 0, 0, 0, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0}
+	pose := defaultPose()
+	pose.X = sway[frame%len(sway)]
+	pose.Y = bob[frame%len(bob)]
+	if frame%8 < 4 {
+		pose.Face = faceWorry
+	} else {
+		pose.Face = faceBars
+	}
+
+	drawCodexPetBase(img, ox, oy, pose)
+	drawThoughtDots(img, ox, oy, frame)
+}
+
+func drawCodexWalk(img *image.RGBA, ox, oy, frame int) {
+	bob := []int{0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0}
+	pose := defaultPose()
+	pose.Y = bob[frame%len(bob)]
+	pose.Legs = frame % 8
+	drawCodexPetBase(img, ox, oy, pose)
+}
+
+func drawCodexVictoryPose(img *image.RGBA, ox, oy, frame int) {
+	pose := defaultPose()
+	pose.Face = faceHappy
+	pose.Arms = armsProud
+
+	switch {
+	case frame < 4:
+		pose.Y = []int{0, 1, 2, 3}[frame]
+		pose.SquashX = 1
+		pose.SquashY = -1
+	case frame < 8:
+		pose.Y = []int{1, -1, -3, -4}[frame-4]
+		pose.SquashY = 1
+	case frame < 14:
+		pose.Y = -4 + []int{0, 1, 0, -1, 0, 1}[frame-8]
+	case frame < 18:
+		pose.Y = []int{-3, -2, -1, 0}[frame-14]
+		if frame >= 16 {
+			pose.Arms = armsUp
+		}
+	default:
+		pose.Y = []int{1, 0}[frame-18]
+		pose.Arms = armsIdle
+	}
+
+	drawCodexPetBase(img, ox, oy, pose)
+	if frame >= 6 && frame < 16 {
+		drawSparkle(img, ox+4, oy+7+pose.Y, Y)
+		drawSparkle(img, ox+27, oy+7+pose.Y, G)
+		drawSparkle(img, ox+16, oy+3+pose.Y, W)
+	}
+}
+
+func drawCodexPetBase(img *image.RGBA, ox, oy int, pose petPose) {
+	x := ox + pose.X
+	y := oy + pose.Y
+
+	drawPetLegs(img, x, y, pose.Legs)
+	drawPetArms(img, x, y, pose.Arms)
+	drawPetBody(img, x, y, pose)
+	drawPetHead(img, x, y, pose)
+	if pose.Laptop {
+		drawPetLaptop(img, x, y)
+	}
+}
+
+func drawPetHead(img *image.RGBA, x, y int, pose petPose) {
+	sx := pose.SquashX
+	sy := pose.SquashY / 2
+
+	drawShadedRoundedRect(img, x+6-sx, y+6+sy, 8+sx, 7, S)
+	drawShadedRoundedRect(img, x+12, y+5+sy, 8, 7, H)
+	drawShadedRoundedRect(img, x+18, y+6+sy, 8+sx, 7, P)
+	drawShadedRoundedRect(img, x+4-sx, y+9+sy, 24+2*sx, 9, P)
+
+	drawRoundedRect(img, x+7-sx, y+8+sy, 18+2*sx, 9, O)
+	drawRoundedRect(img, x+8-sx, y+9+sy, 16+2*sx, 7, panelFill)
+	drawHorizontalLine(img, x+10-sx, x+21+sx, y+9+sy, panelHi)
+	drawFace(img, x+sx, y+sy, pose.Face)
+}
+
+func drawPetBody(img *image.RGBA, x, y int, pose petPose) {
+	w := clamp(12+pose.SquashX*2, 9, 16)
+	h := clamp(8-pose.SquashY/2, 6, 10)
+	bodyX := x + 16 - w/2
+	bodyY := y + 18 + pose.SquashY/2
+
+	drawShadedRoundedRect(img, bodyX, bodyY, w, h, P)
+	drawTinyPrompt(img, x+13, bodyY+3)
+}
+
+func drawPetLegs(img *image.RGBA, x, y, phase int) {
+	leftLift, rightLift := 0, 0
+	leftSlide, rightSlide := 0, 0
+	switch phase % 8 {
+	case 1, 2:
+		leftLift = 1
+		leftSlide = -1
+	case 3, 4:
+		rightLift = 1
+		rightSlide = 1
+	case 5, 6:
+		leftLift = 1
+		leftSlide = 1
+	default:
+		rightLift = 0
+	}
+
+	drawShadedRoundedRect(img, x+10+leftSlide, y+24-leftLift, 4, 5, S)
+	drawShadedRoundedRect(img, x+18+rightSlide, y+24-rightLift, 4, 5, P)
+}
+
+func drawPetArms(img *image.RGBA, x, y int, pose armPose) {
+	switch pose {
+	case armsUp:
+		drawShadedRoundedRect(img, x+5, y+12, 4, 9, S)
+		drawShadedRoundedRect(img, x+23, y+12, 4, 9, P)
+		drawShadedRoundedRect(img, x+4, y+10, 5, 4, S)
+		drawShadedRoundedRect(img, x+23, y+10, 5, 4, H)
+	case armsCast:
+		drawShadedRoundedRect(img, x+5, y+11, 4, 8, S)
+		drawShadedRoundedRect(img, x+23, y+11, 4, 8, H)
+		setPixel(img, x+5, y+10, G)
+		setPixel(img, x+26, y+10, G)
+	case armsPunch:
+		drawShadedRoundedRect(img, x+5, y+18, 4, 5, S)
+		drawShadedRoundedRect(img, x+23, y+15, 8, 4, P)
+		drawShadedRoundedRect(img, x+29, y+14, 4, 5, H)
+	case armsTyping:
+		drawShadedRoundedRect(img, x+6, y+20, 5, 3, S)
+		drawShadedRoundedRect(img, x+21, y+20, 5, 3, H)
+	case armsHurt:
+		drawShadedRoundedRect(img, x+4, y+20, 4, 4, S)
+		drawShadedRoundedRect(img, x+24, y+19, 4, 4, H)
+	case armsProud:
+		drawShadedRoundedRect(img, x+5, y+9, 4, 11, S)
+		drawShadedRoundedRect(img, x+23, y+9, 4, 11, P)
+		drawShadedRoundedRect(img, x+4, y+7, 5, 4, S)
+		drawShadedRoundedRect(img, x+23, y+7, 5, 4, H)
+	default:
+		drawShadedRoundedRect(img, x+5, y+18, 4, 5, S)
+		drawShadedRoundedRect(img, x+23, y+18, 4, 5, H)
+	}
+}
+
+func drawFace(img *image.RGBA, x, y int, face petFace) {
+	switch face {
+	case faceBlink:
+		drawHorizontalLine(img, x+10, x+13, y+13, G)
+		drawHorizontalLine(img, x+18, x+21, y+13, G)
+	case faceHappy:
+		setPixel(img, x+10, y+13, G)
+		setPixel(img, x+11, y+12, G)
+		setPixel(img, x+12, y+12, G)
+		setPixel(img, x+13, y+13, G)
+		setPixel(img, x+18, y+13, G)
+		setPixel(img, x+19, y+12, G)
+		setPixel(img, x+20, y+12, G)
+		setPixel(img, x+21, y+13, G)
+	case faceBars:
+		drawRect(img, x+11, y+11, 2, 4, G)
+		drawRect(img, x+20, y+11, 2, 4, G)
+	case faceX:
+		drawMiniX(img, x+10, y+11)
+		drawMiniX(img, x+18, y+11)
+	case faceWorry:
+		drawHorizontalLine(img, x+10, x+13, y+13, G)
+		drawHorizontalLine(img, x+19, x+22, y+12, G)
+		setPixel(img, x+18, y+13, G)
+		setPixel(img, x+22, y+13, G)
+	case faceSquint:
+		setPixel(img, x+10, y+11, G)
+		setPixel(img, x+11, y+12, G)
+		setPixel(img, x+10, y+13, G)
+		setPixel(img, x+21, y+11, G)
+		setPixel(img, x+20, y+12, G)
+		setPixel(img, x+21, y+13, G)
+	default:
+		drawPromptGlyph(img, x+10, y+11)
+		drawHorizontalLine(img, x+18, x+21, y+14, G)
+	}
+}
+
+func drawPetLaptop(img *image.RGBA, x, y int) {
+	drawRoundedRect(img, x+9, y+22, 14, 7, O)
+	drawRoundedRect(img, x+10, y+23, 12, 5, M)
+	drawPromptGlyph(img, x+14, y+24)
+	drawHorizontalLine(img, x+8, x+24, y+28, O)
+}
+
+func drawCodexPetSmear(img *image.RGBA, ox, oy int) {
+	drawShadedRoundedRect(img, ox+3, oy+9, 27, 9, P)
+	drawRoundedRect(img, ox+9, oy+11, 17, 6, O)
+	drawRoundedRect(img, ox+10, oy+12, 15, 4, panelFill)
+	drawHorizontalLine(img, ox+13, ox+16, oy+14, G)
+	drawHorizontalLine(img, ox+20, ox+23, oy+14, G)
+	drawShadedRoundedRect(img, ox+24, oy+15, 8, 4, H)
+	drawShadedRoundedRect(img, ox+11, oy+20, 10, 6, P)
+}
+
+func drawThoughtDots(img *image.RGBA, ox, oy, frame int) {
+	dot := frame % 12
+	setPixel(img, ox+23, oy+7, W)
+	if dot > 3 {
+		drawRect(img, ox+25, oy+5, 2, 2, W)
+	}
+	if dot > 7 {
+		drawRoundedRect(img, ox+27, oy+2, 4, 3, W)
+		setPixel(img, ox+28, oy+3, G)
+	}
+}
+
+func drawTinyPrompt(img *image.RGBA, x, y int) {
+	setPixel(img, x, y, G)
+	setPixel(img, x+1, y+1, G)
+	setPixel(img, x, y+2, G)
+	drawHorizontalLine(img, x+4, x+6, y+2, G)
+}
+
+func drawPromptGlyph(img *image.RGBA, x, y int) {
+	setPixel(img, x, y, G)
+	setPixel(img, x+1, y+1, G)
+	setPixel(img, x+2, y+2, G)
+	setPixel(img, x+1, y+3, G)
+	setPixel(img, x, y+4, G)
+}
+
+func drawMiniX(img *image.RGBA, x, y int) {
+	setPixel(img, x, y, G)
+	setPixel(img, x+2, y, G)
+	setPixel(img, x+1, y+1, G)
+	setPixel(img, x, y+3, G)
+	setPixel(img, x+2, y+3, G)
+}
+
+func drawImpactBurst(img *image.RGBA, cx, cy int) {
+	setPixel(img, cx, cy, W)
+	setPixel(img, cx+1, cy, W)
+	setPixel(img, cx-1, cy, W)
+	setPixel(img, cx, cy-1, W)
+	setPixel(img, cx, cy+1, W)
+	setPixel(img, cx+3, cy-2, Y)
+	setPixel(img, cx+3, cy+2, Y)
+	setPixel(img, cx-2, cy-2, Y)
+	setPixel(img, cx-2, cy+2, Y)
+	setPixel(img, cx+4, cy, G)
+	setPixel(img, cx, cy-3, G)
+	setPixel(img, cx, cy+3, G)
+}
+
+func drawSparkle(img *image.RGBA, x, y int, c C) {
+	setPixel(img, x, y, W)
+	setPixel(img, x+1, y, c)
+	setPixel(img, x-1, y, c)
+	setPixel(img, x, y+1, c)
+	setPixel(img, x, y-1, c)
+}
+
+func drawShadedRoundedRect(img *image.RGBA, x, y, w, h int, fill C) {
+	if w <= 0 || h <= 0 {
+		return
+	}
+	drawRoundedRect(img, x, y, w, h, O)
+	if w <= 2 || h <= 2 {
+		return
+	}
+	drawRoundedRect(img, x+1, y+1, w-2, h-2, fill)
+	drawHorizontalLine(img, x+2, x+w-3, y+1, H)
+	drawHorizontalLine(img, x+2, x+w-3, y+h-2, S)
+	for yy := y + 2; yy <= y+h-3; yy++ {
+		setPixel(img, x+1, yy, S)
+		setPixel(img, x+w-2, yy, H)
+	}
+}
+
+func drawRoundedRect(img *image.RGBA, x, y, w, h int, c C) {
+	for yy := 0; yy < h; yy++ {
+		for xx := 0; xx < w; xx++ {
+			if (xx == 0 || xx == w-1) && (yy == 0 || yy == h-1) {
+				continue
+			}
+			setPixel(img, x+xx, y+yy, c)
+		}
+	}
+}
+
+func drawRect(img *image.RGBA, x, y, w, h int, c C) {
+	for yy := 0; yy < h; yy++ {
+		for xx := 0; xx < w; xx++ {
+			setPixel(img, x+xx, y+yy, c)
+		}
+	}
+}
+
+func drawHorizontalLine(img *image.RGBA, x1, x2, y int, c C) {
+	if x2 < x1 {
+		x1, x2 = x2, x1
+	}
+	for x := x1; x <= x2; x++ {
+		setPixel(img, x, y, c)
+	}
+}
+
+func setPixel(img *image.RGBA, x, y int, c C) {
+	img.Set(x, y, c)
 }
 
 func simpleSin(deg int) int {
-	// Simple sine lookup (returns -100 to 100)
 	sins := []int{0, 50, 87, 100, 87, 50, 0, -50, -87, -100, -87, -50}
-	return sins[(deg/30)%12]
+	return sins[((deg/30)%12+12)%12]
 }
 
 func simpleCos(deg int) int {
 	return simpleSin(deg + 90)
 }
 
-func drawClaudeAttack(img *image.RGBA, ox, oy, frame int) {
-	// 16 frame attack with smooth anticipation, smear, impact, follow-through
-	// 0-4: Anticipation (smooth squat, arm pull back)
-	// 5-6: Wind-up peak
-	// 7: Smear frame
-	// 8-9: Impact
-	// 10-13: Follow-through bounce
-	// 14-15: Recovery
-
-	switch {
-	case frame < 3: // Gradual anticipation
-		squash := []int{-1, -2, -2}[frame]
-		drawBlobSquashed(img, ox, oy+1+frame/2, 1, squash)
-		// Arm pulling back gradually
-		armX := 4 - frame
-		for dy := 0; dy < 3; dy++ {
-			img.Set(ox+armX, oy+16+dy, S)
-			img.Set(ox+armX+1, oy+16+dy, P)
-			img.Set(ox+armX+2, oy+16+dy, P)
-		}
-
-	case frame < 5: // Deep coil
-		drawBlobSquashed(img, ox, oy+3, 2, -3)
-		for dy := 0; dy < 3; dy++ {
-			img.Set(ox+0, oy+15+dy, S)
-			img.Set(ox+1, oy+15+dy, P)
-			img.Set(ox+2, oy+15+dy, P)
-		}
-
-	case frame < 7: // Wind-up with squint
-		drawBlobSquashed(img, ox, oy+2, 1, -2)
-		drawEyesSquint(img, ox, oy+2)
-
-	case frame == 7: // SMEAR
-		drawBlobSmearHorizontal(img, ox, oy)
-		for dy := 0; dy < 2; dy++ {
-			for dx := 0; dx < 15; dx++ {
-				c := P
-				if dx > 10 {
-					c = H
-				}
-				img.Set(ox+14+dx, oy+15+dy, c)
-			}
-		}
-
-	case frame < 10: // Impact frames
-		drawBlobSquashed(img, ox+3, oy+1, -1, 1)
-		// Extended arm
-		armLen := 8
-		for dy := 0; dy < 3; dy++ {
-			for dx := 0; dx < armLen; dx++ {
-				c := P
-				if dx > armLen-3 {
-					c = H
-				}
-				img.Set(ox+24+dx, oy+15+dy, c)
-			}
-		}
-		if frame == 8 {
-			drawImpactBurst(img, ox+31, oy+14)
-		} else {
-			// Fading burst
-			img.Set(ox+31, oy+14, Y)
-			img.Set(ox+30, oy+12, Y)
-			img.Set(ox+30, oy+16, Y)
-		}
-
-	case frame < 14: // Follow-through bounce
-		bounceY := []int{-2, -1, 0, 1}[frame-10]
-		stretchY := []int{1, 0, 0, -1}[frame-10]
-		drawBlobSquashed(img, ox+2-(frame-10)/2, oy+bounceY, 0, stretchY)
-		// Arm retracting
-		armLen := 6 - (frame - 10)
-		for dy := 0; dy < 3; dy++ {
-			for dx := 0; dx < armLen; dx++ {
-				img.Set(ox+25+dx, oy+15+bounceY+dy, P)
-			}
-		}
-		// Lingering sparks
-		if frame < 12 {
-			img.Set(ox+29, oy+12, Y)
-		}
-
-	default: // Recovery
-		bounce := []int{-1, 0}[frame-14]
-		drawClaudeBlob(img, ox, oy+bounce, 0, false, false)
+func clamp(v, min, max int) int {
+	if v < min {
+		return min
 	}
-}
-
-// Helper: Draw squashed/stretched blob
-func drawBlobSquashed(img *image.RGBA, ox, oy, squashX, squashY int) {
-	// Body dimensions adjusted by squash
-	bodyTop := 12 + squashY
-	bodyBottom := 22 - squashY
-	bodyLeft := 7 - squashX
-	bodyRight := 25 + squashX
-
-	for y := bodyTop; y < bodyBottom; y++ {
-		for x := bodyLeft; x < bodyRight; x++ {
-			py := oy + y
-			px := ox + x
-			var c C
-			if x < bodyLeft+2 {
-				c = S
-			} else if x >= bodyRight-2 {
-				c = H
-			} else if y < bodyTop+2 {
-				c = H
-			} else if y >= bodyBottom-2 {
-				c = S
-			} else {
-				c = P
-			}
-			img.Set(px, py, c)
-		}
+	if v > max {
+		return max
 	}
-
-	// Eyes
-	eyeY := oy + 14 + squashY
-	for dy := 0; dy < 3; dy++ {
-		for dx := 0; dx < 3; dx++ {
-			img.Set(ox+11-squashX+dx, eyeY+dy, O)
-			img.Set(ox+18+squashX+dx, eyeY+dy, O)
-		}
-	}
-
-	// Legs
-	legY := oy + 22 - squashY
-	for dy := 0; dy < 4; dy++ {
-		img.Set(ox+8-squashX, legY+dy, S)
-		img.Set(ox+9-squashX, legY+dy, P)
-		img.Set(ox+11, legY+dy, S)
-		img.Set(ox+12, legY+dy, P)
-		img.Set(ox+19, legY+dy, P)
-		img.Set(ox+20, legY+dy, H)
-		img.Set(ox+22+squashX, legY+dy, P)
-		img.Set(ox+23+squashX, legY+dy, H)
-	}
-
-	// Arms (default position)
-	armY := oy + 15 + squashY/2
-	for dy := 0; dy < 3; dy++ {
-		img.Set(ox+4-squashX, armY+dy, S)
-		img.Set(ox+5-squashX, armY+dy, P)
-		img.Set(ox+6-squashX, armY+dy, P)
-		img.Set(ox+25+squashX, armY+dy, P)
-		img.Set(ox+26+squashX, armY+dy, P)
-		img.Set(ox+27+squashX, armY+dy, H)
-	}
-}
-
-func drawEyesSquint(img *image.RGBA, ox, oy int) {
-	// Determined/angry squint eyes "> <"
-	eyeY := oy + 14
-	// Left eye ">"
-	img.Set(ox+11, eyeY, O)
-	img.Set(ox+12, eyeY+1, O)
-	img.Set(ox+11, eyeY+2, O)
-	// Right eye "<"
-	img.Set(ox+20, eyeY, O)
-	img.Set(ox+19, eyeY+1, O)
-	img.Set(ox+20, eyeY+2, O)
-}
-
-func drawBlobSmearHorizontal(img *image.RGBA, ox, oy int) {
-	// Motion blur - stretched body
-	bodyTop := 13
-	bodyBottom := 21
-	bodyLeft := 5  // stretched back
-	bodyRight := 26 // normal right
-
-	for y := bodyTop; y < bodyBottom; y++ {
-		for x := bodyLeft; x < bodyRight; x++ {
-			py := oy + y
-			px := ox + x
-			c := P
-			if x < 10 {
-				c = S // motion trail darker
-			} else if x > 22 {
-				c = H
-			}
-			img.Set(px, py, c)
-		}
-	}
-
-	// Blurred eyes
-	img.Set(ox+14, oy+15, O)
-	img.Set(ox+15, oy+15, O)
-	img.Set(ox+19, oy+15, O)
-	img.Set(ox+20, oy+15, O)
-
-	// No legs visible during smear - too fast!
-}
-
-func drawImpactBurst(img *image.RGBA, cx, cy int) {
-	// Classic impact star burst
-	img.Set(cx, cy, W)
-	img.Set(cx+1, cy, W)
-	img.Set(cx-1, cy, W)
-	img.Set(cx, cy-1, W)
-	img.Set(cx, cy+1, W)
-	// Outer sparks
-	img.Set(cx+3, cy-2, Y)
-	img.Set(cx+3, cy+2, Y)
-	img.Set(cx-2, cy-2, Y)
-	img.Set(cx-2, cy+2, Y)
-	img.Set(cx+4, cy, Y)
-	img.Set(cx, cy-3, Y)
-	img.Set(cx, cy+3, Y)
-}
-
-func drawBlink(img *image.RGBA, ox, oy, blinkFrame int) {
-	// Overwrite eyes with blink state
-	// blinkFrame: 0=closing, 1=closed, 2=opening
-	eyeY := oy + 14
-
-	// Clear existing eyes first by redrawing body color over them
-	for dy := 0; dy < 4; dy++ {
-		for dx := 0; dx < 3; dx++ {
-			img.Set(ox+11+dx, eyeY+dy, P)
-			img.Set(ox+18+dx, eyeY+dy, P)
-		}
-	}
-
-	switch blinkFrame {
-	case 0: // Half closed
-		for dx := 0; dx < 3; dx++ {
-			img.Set(ox+11+dx, eyeY+2, O)
-			img.Set(ox+11+dx, eyeY+3, O)
-			img.Set(ox+18+dx, eyeY+2, O)
-			img.Set(ox+18+dx, eyeY+3, O)
-		}
-	case 1: // Fully closed - just a line
-		for dx := 0; dx < 3; dx++ {
-			img.Set(ox+11+dx, eyeY+2, O)
-			img.Set(ox+18+dx, eyeY+2, O)
-		}
-	case 2: // Half open
-		for dx := 0; dx < 3; dx++ {
-			img.Set(ox+11+dx, eyeY+1, O)
-			img.Set(ox+11+dx, eyeY+2, O)
-			img.Set(ox+11+dx, eyeY+3, O)
-			img.Set(ox+18+dx, eyeY+1, O)
-			img.Set(ox+18+dx, eyeY+2, O)
-			img.Set(ox+18+dx, eyeY+3, O)
-		}
-	}
-}
-
-func drawClaudeWriting(img *image.RGBA, ox, oy, frame int) {
-	// 16 frame typing with smooth bob and rapid arm movement
-	bobCurve := []int{0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0}
-	bob := bobCurve[frame]
-	drawClaudeBlob(img, ox, oy, bob, false, false)
-
-	// Typing arm animation - rapid back and forth
-	armPhase := frame % 4
-	armOffset := []int{0, 1, 0, -1}[armPhase]
-
-	// Overwrite right arm with typing motion
-	armY := oy + 15 + bob
-	for dy := 0; dy < 3; dy++ {
-		img.Set(ox+25+armOffset, armY+dy, P)
-		img.Set(ox+26+armOffset, armY+dy, P)
-		img.Set(ox+27+armOffset, armY+dy, H)
-	}
-
-	// Terminal green sparkles (typing effect)
-	if frame%3 == 0 {
-		img.Set(ox+28+armOffset, oy+14, G)
-	}
-	if frame%4 == 1 {
-		img.Set(ox+29, oy+16, G)
-	}
-}
-
-func drawClaudeVictory(img *image.RGBA, ox, oy, frame int) {
-	// 20 frame victory: anticipation (0-3), jump up (4-8), peak (9-11), fall (12-15), land bounce (16-19)
-	switch {
-	case frame < 4: // Anticipation squat
-		squash := []int{0, -1, -2, -2}[frame]
-		drawBlobSquashed(img, ox, oy+2, 0, squash)
-
-	case frame < 9: // Jump up - stretch vertically
-		jumpY := []int{0, 3, 6, 9, 11}[frame-4]
-		stretch := []int{2, 2, 1, 1, 0}[frame-4]
-		drawBlobSquashed(img, ox, oy-jumpY, 0, stretch)
-		// Arms up
-		armY := oy - jumpY + 10
-		for dy := 0; dy < 3; dy++ {
-			img.Set(ox+4, armY+dy, P)
-			img.Set(ox+5, armY+dy, P)
-			img.Set(ox+26, armY+dy, P)
-			img.Set(ox+27, armY+dy, P)
-		}
-
-	case frame < 12: // Peak - happy wiggle
-		jumpY := 12
-		wiggle := []int{0, 1, 0}[frame-9]
-		drawBlobSquashed(img, ox+wiggle, oy-jumpY, 0, 0)
-		// Happy eyes ^_^
-		drawHappyEyes(img, ox+wiggle, oy-jumpY)
-		// Arms up wiggling
-		armY := oy - jumpY + 10
-		for dy := 0; dy < 3; dy++ {
-			img.Set(ox+4-wiggle, armY+dy, P)
-			img.Set(ox+27+wiggle, armY+dy, P)
-		}
-		// Sparkles!
-		img.Set(ox+2, oy-jumpY+6, Y)
-		img.Set(ox+29, oy-jumpY+6, Y)
-		if frame == 10 {
-			img.Set(ox+16, oy-jumpY-2, W)
-		}
-
-	case frame < 16: // Fall down
-		jumpY := []int{10, 7, 4, 1}[frame-12]
-		stretch := []int{1, 1, 0, -1}[frame-12]
-		drawBlobSquashed(img, ox, oy-jumpY, 0, stretch)
-
-	default: // Land and bounce settle
-		bounceY := []int{2, 0, -1, 0}[frame-16]
-		squash := []int{-2, -1, 1, 0}[frame-16]
-		drawBlobSquashed(img, ox, oy+bounceY, 0, squash)
-		// Happy expression lingers
-		if frame < 18 {
-			drawHappyEyes(img, ox, oy+bounceY)
-		}
-	}
-}
-
-func drawHappyEyes(img *image.RGBA, ox, oy int) {
-	// ^_^ eyes
-	eyeY := oy + 14
-	// Overwrite with happy arcs
-	for dx := 0; dx < 3; dx++ {
-		for dy := 0; dy < 4; dy++ {
-			img.Set(ox+11+dx, eyeY+dy, P) // clear left
-			img.Set(ox+18+dx, eyeY+dy, P) // clear right
-		}
-	}
-	// Left eye ^
-	img.Set(ox+11, eyeY+2, O)
-	img.Set(ox+12, eyeY+1, O)
-	img.Set(ox+13, eyeY+2, O)
-	// Right eye ^
-	img.Set(ox+18, eyeY+2, O)
-	img.Set(ox+19, eyeY+1, O)
-	img.Set(ox+20, eyeY+2, O)
-}
-
-func drawClaudeHurt(img *image.RGBA, ox, oy, frame int) {
-	// 16 frame hurt: impact squash (0-2), knockback (3-8), bounce recover (9-15)
-	switch {
-	case frame < 3: // Impact squash
-		squash := []int{-3, -2, -1}[frame]
-		drawBlobSquashed(img, ox, oy+2, -1, squash)
-		// Impact burst
-		if frame == 0 {
-			drawImpactBurst(img, ox+28, oy+14)
-		}
-
-	case frame < 9: // Knockback with stretch
-		knockX := []int{2, 5, 7, 8, 7, 5}[frame-3]
-		stretch := []int{2, 2, 1, 0, 0, -1}[frame-3]
-		drawBlobSquashed(img, ox-knockX, oy, -1, stretch)
-		// X_X eyes
-		drawXEyes(img, ox-knockX, oy)
-		// Flying stars
-		if frame < 7 {
-			img.Set(ox+28-knockX/2, oy+10, Y)
-			img.Set(ox+30-knockX/3, oy+14, W)
-		}
-
-	default: // Recovery bounce
-		recoverX := []int{4, 3, 2, 1, 0, 0, 0}[frame-9]
-		bounceY := []int{-1, 0, 1, 0, -1, 0, 0}[frame-9]
-		drawBlobSquashed(img, ox-recoverX, oy+bounceY, 0, 0)
-		// X eyes fade to normal
-		if frame < 13 {
-			drawXEyes(img, ox-recoverX, oy+bounceY)
-		}
-	}
-}
-
-func drawXEyes(img *image.RGBA, ox, oy int) {
-	eyeY := oy + 14
-	// Clear and draw X pattern
-	for dx := 0; dx < 3; dx++ {
-		for dy := 0; dy < 4; dy++ {
-			img.Set(ox+11+dx, eyeY+dy, P)
-			img.Set(ox+18+dx, eyeY+dy, P)
-		}
-	}
-	// Left X
-	img.Set(ox+11, eyeY, O)
-	img.Set(ox+13, eyeY, O)
-	img.Set(ox+12, eyeY+1, O)
-	img.Set(ox+11, eyeY+3, O)
-	img.Set(ox+13, eyeY+3, O)
-	// Right X
-	img.Set(ox+18, eyeY, O)
-	img.Set(ox+20, eyeY, O)
-	img.Set(ox+19, eyeY+1, O)
-	img.Set(ox+18, eyeY+3, O)
-	img.Set(ox+20, eyeY+3, O)
-}
-
-func drawClaudeThinking(img *image.RGBA, ox, oy, frame int) {
-	// 16 frame thinking: smooth sway with gradually appearing thought bubbles
-	// Sway curve - gentle sine-like motion
-	swayCurve := []int{0, 0, 1, 1, 1, 1, 0, 0, 0, 0, -1, -1, -1, -1, 0, 0}
-	sway := swayCurve[frame]
-
-	// Subtle breathing/bob while thinking
-	bobCurve := []int{0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0}
-	bob := bobCurve[frame]
-
-	drawClaudeBlob(img, ox+sway, oy, bob, false, false)
-
-	// Eyes look up when thinking - thoughtful gaze
-	eyeY := oy + 13 - bob
-	// Clear bottom of eyes and shift pupils upward for "looking up" effect
-	for dx := 0; dx < 3; dx++ {
-		// Left eye - clear bottom, add darker pupil at top
-		img.Set(ox+11+sway+dx, eyeY+3, P)
-		// Right eye
-		img.Set(ox+18+sway+dx, eyeY+3, P)
-	}
-
-	// Thought bubble chain - smooth fade in with floating dots leading to bubble
-	// Frame progression: dots appear one by one, then bubble forms smoothly
-	dotY := oy + 8
-
-	// Dot 1 (closest to Claude) - appears frames 2+
-	if frame >= 2 {
-		// Gentle pulse effect
-		dotAlpha := frame >= 4
-		if dotAlpha {
-			img.Set(ox+23+sway/2, dotY+3, W)
-		} else {
-			// Smaller/dimmer initially
-			img.Set(ox+23+sway/2, dotY+3, C{230, 230, 230, 255})
-		}
-	}
-
-	// Dot 2 (middle) - appears frames 4+
-	if frame >= 4 {
-		dotAlpha := frame >= 6
-		if dotAlpha {
-			img.Set(ox+25, dotY+1, W)
-			img.Set(ox+26, dotY+1, W)
-		} else {
-			img.Set(ox+25, dotY+1, C{230, 230, 230, 255})
-		}
-	}
-
-	// Dot 3 (larger, closer to bubble) - appears frames 6+
-	if frame >= 6 {
-		dotAlpha := frame >= 8
-		if dotAlpha {
-			img.Set(ox+27, dotY-1, W)
-			img.Set(ox+28, dotY-1, W)
-			img.Set(ox+27, dotY, W)
-			img.Set(ox+28, dotY, W)
-		} else {
-			img.Set(ox+27, dotY-1, C{230, 230, 230, 255})
-			img.Set(ox+28, dotY-1, C{230, 230, 230, 255})
-		}
-	}
-
-	// Main thought bubble - forms gradually frames 8+
-	if frame >= 8 {
-		bubbleX := ox + 26
-		bubbleY := dotY - 6
-
-		// Bubble grows from center outward
-		bubblePhase := frame - 8 // 0-7
-
-		// Core of bubble (appears first)
-		if bubblePhase >= 0 {
-			img.Set(bubbleX+2, bubbleY+2, W)
-			img.Set(bubbleX+3, bubbleY+2, W)
-		}
-
-		// Bubble expands
-		if bubblePhase >= 1 {
-			img.Set(bubbleX+1, bubbleY+1, W)
-			img.Set(bubbleX+2, bubbleY+1, W)
-			img.Set(bubbleX+3, bubbleY+1, W)
-			img.Set(bubbleX+4, bubbleY+1, W)
-			img.Set(bubbleX+1, bubbleY+2, W)
-			img.Set(bubbleX+4, bubbleY+2, W)
-			img.Set(bubbleX+1, bubbleY+3, W)
-			img.Set(bubbleX+2, bubbleY+3, W)
-			img.Set(bubbleX+3, bubbleY+3, W)
-			img.Set(bubbleX+4, bubbleY+3, W)
-		}
-
-		// Full bubble with rounded corners
-		if bubblePhase >= 2 {
-			// Top row
-			img.Set(bubbleX+2, bubbleY, W)
-			img.Set(bubbleX+3, bubbleY, W)
-			// Bottom row
-			img.Set(bubbleX+2, bubbleY+4, W)
-			img.Set(bubbleX+3, bubbleY+4, W)
-			// Sides
-			img.Set(bubbleX, bubbleY+2, W)
-			img.Set(bubbleX+5, bubbleY+2, W)
-		}
-
-		// Lightbulb/idea icon inside bubble - pulses gently
-		if bubblePhase >= 3 {
-			// Lightbulb base
-			img.Set(bubbleX+2, bubbleY+3, Y)
-			img.Set(bubbleX+3, bubbleY+3, Y)
-			// Lightbulb glow - alternates for sparkle effect
-			if frame%4 < 2 {
-				img.Set(bubbleX+2, bubbleY+2, C{255, 255, 200, 255}) // bright yellow-white
-				img.Set(bubbleX+3, bubbleY+2, C{255, 255, 200, 255})
-				img.Set(bubbleX+2, bubbleY+1, Y)
-				img.Set(bubbleX+3, bubbleY+1, Y)
-			} else {
-				img.Set(bubbleX+2, bubbleY+2, Y)
-				img.Set(bubbleX+3, bubbleY+2, Y)
-				img.Set(bubbleX+2, bubbleY+1, C{255, 255, 200, 255})
-				img.Set(bubbleX+3, bubbleY+1, C{255, 255, 200, 255})
-			}
-			// Sparkle rays from lightbulb
-			if frame%3 == 0 {
-				img.Set(bubbleX+1, bubbleY+1, Y)
-			}
-			if frame%3 == 1 {
-				img.Set(bubbleX+4, bubbleY+1, Y)
-			}
-		}
-	}
-}
-
-// drawClaudeVictoryPose draws a 20-frame triumphant fist pump celebration
-// Detailed animation: anticipation, powerful fist raise, hold with sparkles, settle
-func drawClaudeVictoryPose(img *image.RGBA, ox, oy, frame int) {
-	// 20 frame victory pose:
-	// 0-3: Anticipation (coil down, building energy)
-	// 4-7: Explosive rise (both fists pump upward)
-	// 8-13: Peak pose (hold triumphant pose with sparkle effects)
-	// 14-17: Settle with pride (arms lower but proud stance)
-	// 18-19: Final proud idle
-
-	switch {
-	case frame < 4: // Anticipation - coil down with building energy
-		// Progressively squat down
-		squash := []int{0, -1, -2, -3}[frame]
-		drawBlobSquashed(img, ox, oy+frame, 1, squash)
-
-		// Arms pull back/down preparing for pump
-		armY := oy + 16 + frame
-		for dy := 0; dy < 3; dy++ {
-			img.Set(ox+3, armY+dy, S)
-			img.Set(ox+4, armY+dy, P)
-			img.Set(ox+27, armY+dy, P)
-			img.Set(ox+28, armY+dy, H)
-		}
-
-		// Building energy sparkles at feet
-		if frame >= 2 {
-			img.Set(ox+8, oy+26, Y)
-			img.Set(ox+23, oy+26, Y)
-		}
-		if frame == 3 {
-			img.Set(ox+6, oy+25, W)
-			img.Set(ox+25, oy+25, W)
-		}
-
-	case frame < 8: // Explosive rise - fists pump up!
-		// Rise up with stretch (reduced height to stay in frame)
-		riseY := []int{1, -1, -2, -3}[frame-4]
-		stretch := []int{3, 2, 1, 0}[frame-4]
-		bodyOY := oy + riseY
-		drawBlobSquashed(img, ox, bodyOY, 0, stretch)
-
-		// Arms extend from body (y=15+stretch) up to raised fist
-		// Body arm position varies with stretch
-		armBottom := bodyOY + 15 + stretch
-		armRaise := []int{2, 4, 5, 6}[frame-4] // How many pixels above body arm
-		armTop := armBottom - armRaise - 3      // Fist position
-
-		// Left arm - vertical from armTop to armBottom
-		for y := armTop; y <= armBottom; y++ {
-			img.Set(ox+4, y, S)
-			img.Set(ox+5, y, P)
-			img.Set(ox+6, y, P)
-		}
-		// Left fist (small square)
-		img.Set(ox+4, armTop-1, S)
-		img.Set(ox+5, armTop-1, P)
-		img.Set(ox+6, armTop-1, P)
-
-		// Right arm - vertical from armTop to armBottom
-		for y := armTop; y <= armBottom; y++ {
-			img.Set(ox+25, y, P)
-			img.Set(ox+26, y, P)
-			img.Set(ox+27, y, H)
-		}
-		// Right fist
-		img.Set(ox+25, armTop-1, P)
-		img.Set(ox+26, armTop-1, P)
-		img.Set(ox+27, armTop-1, H)
-
-		// Motion lines during rise
-		if frame < 7 {
-			img.Set(ox+2, bodyOY+20, S)
-			img.Set(ox+29, bodyOY+20, H)
-		}
-
-		// Explosion sparkles near fists
-		if frame >= 6 {
-			img.Set(ox+3, armTop, Y)
-			img.Set(ox+28, armTop, Y)
-		}
-
-	case frame < 14: // Peak pose - triumphant hold with effects
-		peakY := -3 // Reduced from -8 to stay in frame
-		// Subtle bob at peak
-		bob := []int{0, 1, 0, -1, 0, 1}[frame-8]
-		bodyOY := oy + peakY + bob
-		drawBlobSquashed(img, ox, bodyOY, 0, 0)
-
-		// Happy/proud eyes
-		drawProudEyes(img, ox, bodyOY)
-
-		// Arms raised - extend from body arm position (y=15) up to fist
-		// Body arm stub is at bodyOY+15, arms extend upward 6 pixels
-		armBottom := bodyOY + 17 // Where arm meets body
-		armTop := bodyOY + 10    // Where fist is
-
-		// Left arm - vertical from armTop to armBottom
-		for y := armTop; y <= armBottom; y++ {
-			img.Set(ox+4, y, S)
-			img.Set(ox+5, y, P)
-			img.Set(ox+6, y, P)
-		}
-		// Left fist at top
-		img.Set(ox+3, armTop-1, S)
-		img.Set(ox+4, armTop-1, S)
-		img.Set(ox+5, armTop-1, P)
-		img.Set(ox+6, armTop-1, P)
-		img.Set(ox+4, armTop, P)
-		img.Set(ox+5, armTop, P)
-
-		// Right arm - vertical from armTop to armBottom
-		for y := armTop; y <= armBottom; y++ {
-			img.Set(ox+25, y, P)
-			img.Set(ox+26, y, P)
-			img.Set(ox+27, y, H)
-		}
-		// Right fist at top
-		img.Set(ox+25, armTop-1, P)
-		img.Set(ox+26, armTop-1, P)
-		img.Set(ox+27, armTop-1, H)
-		img.Set(ox+28, armTop-1, H)
-		img.Set(ox+26, armTop, P)
-		img.Set(ox+27, armTop, P)
-
-		// Rotating sparkle celebration around Claude
-		sparkPhase := frame - 8
-		sparklePositions := [][]int{
-			{2, 8}, {29, 8},     // sides near arms
-			{0, 16}, {31, 16},   // mid sides
-			{16, 6},             // top center
-			{8, 10}, {24, 10},   // upper sides
-		}
-
-		for i, pos := range sparklePositions {
-			show := ((sparkPhase + i) % 3) != 0
-			if show {
-				c := Y
-				if (sparkPhase+i)%2 == 0 {
-					c = W
-				}
-				img.Set(ox+pos[0], oy+pos[1], c)
-			}
-		}
-
-		// Star burst above head at peak frames
-		if frame == 9 || frame == 10 {
-			img.Set(ox+16, bodyOY+6, W)
-			img.Set(ox+15, bodyOY+6, Y)
-			img.Set(ox+17, bodyOY+6, Y)
-			img.Set(ox+16, bodyOY+5, Y)
-			img.Set(ox+16, bodyOY+7, Y)
-		}
-
-	case frame < 18: // Settle with pride - arms lower gracefully
-		settleY := []int{-2, -1, 0, 0}[frame-14]
-		drawBlobSquashed(img, ox, oy+settleY, 0, 0)
-
-		// Proud eyes linger
-		if frame < 16 {
-			drawProudEyes(img, ox, oy+settleY)
-		}
-
-		// Arms lowering but still confident
-		armLower := []int{2, 5, 8, 10}[frame-14]
-		armY := oy + settleY + 5 + armLower
-
-		// Left arm coming down
-		armHeight := 4 - (frame - 14)
-		if armHeight < 3 {
-			armHeight = 3
-		}
-		for dy := 0; dy < armHeight; dy++ {
-			img.Set(ox+4, armY+dy, S)
-			img.Set(ox+5, armY+dy, P)
-			img.Set(ox+6, armY+dy, P)
-		}
-
-		// Right arm coming down
-		for dy := 0; dy < armHeight; dy++ {
-			img.Set(ox+25, armY+dy, P)
-			img.Set(ox+26, armY+dy, P)
-			img.Set(ox+27, armY+dy, H)
-		}
-
-		// Lingering sparkles
-		if frame < 16 {
-			img.Set(ox+2, oy+settleY+8, Y)
-			img.Set(ox+29, oy+settleY+8, Y)
-		}
-
-	default: // Final proud stance
-		bounceY := []int{1, 0}[frame-18]
-		drawClaudeBlob(img, ox, oy+bounceY, 0, false, false)
-
-		// Satisfied expression
-		if frame == 18 {
-			drawProudEyes(img, ox, oy+bounceY)
-		}
-	}
-}
-
-// drawProudEyes draws confident/proud eyes (similar to happy but more intense)
-func drawProudEyes(img *image.RGBA, ox, oy int) {
-	eyeY := oy + 14
-	// Clear existing eyes
-	for dx := 0; dx < 3; dx++ {
-		for dy := 0; dy < 4; dy++ {
-			img.Set(ox+11+dx, eyeY+dy, P)
-			img.Set(ox+18+dx, eyeY+dy, P)
-		}
-	}
-	// Confident squint-smile ^_^ with slight intensity
-	// Left eye - upward arc
-	img.Set(ox+11, eyeY+2, O)
-	img.Set(ox+12, eyeY+1, O)
-	img.Set(ox+13, eyeY+2, O)
-	// Add slight gleam
-	img.Set(ox+12, eyeY, C{255, 255, 220, 255})
-
-	// Right eye - upward arc
-	img.Set(ox+18, eyeY+2, O)
-	img.Set(ox+19, eyeY+1, O)
-	img.Set(ox+20, eyeY+2, O)
-	// Add slight gleam
-	img.Set(ox+19, eyeY, C{255, 255, 220, 255})
+	return v
 }

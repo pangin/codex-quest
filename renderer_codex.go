@@ -2,12 +2,12 @@ package main
 
 import rl "github.com/gen2brain/raylib-go/raylib"
 
-func (r *Renderer) drawClaude(state *AnimationState) {
+func (r *Renderer) drawCodex(state *AnimationState) {
 	// Scaled dimensions
-	scaledW := float32(spriteFrameWidth * claudeScale)
-	scaledH := float32(spriteFrameHeight * claudeScale)
+	scaledW := float32(spriteFrameWidth * codexScale)
+	scaledH := float32(spriteFrameHeight * codexScale)
 
-	// Position Claude in center of scene
+	// Position Codex in center of scene
 	x := float32(screenWidth/2) - scaledW/2
 	y := float32(160) - scaledH + 10 // Feet on floor
 
@@ -33,44 +33,39 @@ func (r *Renderer) drawClaude(state *AnimationState) {
 		rl.DrawTexturePro(r.spriteSheet, sourceRec, destRec, rl.Vector2{}, 0, rl.White)
 	} else {
 		// Fallback placeholder
-		r.drawPlaceholderClaude(int(x), int(y), state)
+		r.drawPlaceholderCodex(int(x), int(y), state)
 	}
 }
 
-// getHeadOffset returns the X,Y offset of Claude's head for the current animation frame
-// These offsets EXACTLY match the sprite generator (cmd/spritegen/main.go)
+// getHeadOffset returns the X,Y offset of Codex's head for the current animation frame.
+// These offsets match the sprite generator's Pet-style base pose.
 func getHeadOffset(state *AnimationState) (float32, float32) {
 	f := state.Frame
 
 	switch state.CurrentAnim {
 	case AnimIdle:
-		// breathCurve from spritegen - subtracted from bodyTop, so positive = UP
-		breathCurve := []int{0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0}
-		return 0, float32(-breathCurve[f%len(breathCurve)]) // Negate: breath up = hat up
+		bob := []int{0, 0, 0, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0}
+		return 0, float32(bob[f%len(bob)])
 
 	case AnimEnter:
-		// Frames 0-7: sparkles only, no Claude visible
 		if f < 8 {
 			return 0, -100 // Off screen
 		} else if f < 15 {
-			// Frames 8-14: materializing (squash effect, roughly centered)
-			return 0, 0
+			settleY := []int{3, 2, 1, 0, -1, 0, 0}
+			return 0, float32(settleY[f-8])
 		} else {
-			// Frames 15-19: bounce settle
 			bounce := []int{-2, -1, 0, 0, 0}
 			return 0, float32(bounce[f-15])
 		}
 
 	case AnimCasting:
 		if f < 5 {
-			// Wind up at oy+1
-			return 0, 1
+			windup := []int{2, 2, 1, 0, -1}
+			return 0, float32(windup[f])
 		} else if f < 13 {
-			// Floating up
-			floatY := []int{-1, -2, -2, -2, -1, -1, -2, -2}
+			floatY := []int{-2, -3, -3, -2, -2, -3, -2, -2}
 			return 0, float32(floatY[f-5])
 		} else {
-			// Settle
 			settleY := []int{-1, 0, 0}
 			idx := f - 13
 			if idx >= len(settleY) {
@@ -81,27 +76,22 @@ func getHeadOffset(state *AnimationState) (float32, float32) {
 
 	case AnimAttack:
 		if f < 3 {
-			// oy+1+frame/2
-			return 0, float32(1 + f/2)
+			y := []int{1, 2, 2}
+			return float32(-f), float32(y[f])
 		} else if f < 5 {
-			// oy+3
-			return 0, 3
+			return -2, 3
 		} else if f < 7 {
-			// oy+2
-			return 0, 2
+			y := []int{2, 1}
+			return 0, float32(y[f-5])
 		} else if f == 7 {
-			// Smear frame
 			return 0, 0
 		} else if f < 10 {
-			// ox+3, oy+1
-			return 3, 1
+			return 2, 1
 		} else if f < 14 {
-			// Follow-through
-			bounceY := []int{-2, -1, 0, 1}
-			xOff := 2 - (f-10)/2
-			return float32(xOff), float32(bounceY[f-10])
+			xOff := []int{1, 1, 0, 0}
+			yOff := []int{-1, 0, 1, 0}
+			return float32(xOff[f-10]), float32(yOff[f-10])
 		} else {
-			// Recovery
 			bounce := []int{-1, 0}
 			idx := f - 14
 			if idx >= len(bounce) {
@@ -111,28 +101,23 @@ func getHeadOffset(state *AnimationState) (float32, float32) {
 		}
 
 	case AnimWriting:
-		// bob is subtracted from bodyTop in spritegen, so positive = UP
-		bobCurve := []int{0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0}
-		return 0, float32(-bobCurve[f%len(bobCurve)]) // Negate: bob up = hat up
+		bob := []int{0, -1, -1, 0, 0, -1, -1, 0, 0, -1, -1, 0, 0, -1, 0, 0}
+		return 0, float32(bob[f%len(bob)])
 
 	case AnimVictory:
 		if f < 4 {
-			// Anticipation at oy+2
-			return 0, 2
+			y := []int{2, 2, 1, 0}
+			return 0, float32(y[f])
 		} else if f < 9 {
-			// Jump up
-			jumpY := []int{0, 3, 6, 9, 11}
-			return 0, float32(-jumpY[f-4])
+			y := []int{0, -2, -4, -6, -7}
+			return 0, float32(y[f-4])
 		} else if f < 12 {
-			// Peak with wiggle
 			wiggle := []int{0, 1, 0}
-			return float32(wiggle[f-9]), -12
+			return float32(wiggle[f-9]), -7
 		} else if f < 16 {
-			// Fall down
-			jumpY := []int{10, 7, 4, 1}
-			return 0, float32(-jumpY[f-12])
+			y := []int{-6, -4, -2, 0}
+			return 0, float32(y[f-12])
 		} else {
-			// Land bounce
 			bounceY := []int{2, 0, -1, 0}
 			idx := f - 16
 			if idx >= len(bounceY) {
@@ -143,14 +128,12 @@ func getHeadOffset(state *AnimationState) (float32, float32) {
 
 	case AnimHurt:
 		if f < 3 {
-			// Impact at oy+2
 			return 0, 2
 		} else if f < 9 {
-			// Knockback
 			knockX := []int{2, 5, 7, 8, 7, 5}
-			return float32(-knockX[f-3]), 0
+			y := []int{0, -1, -1, 0, 1, 0}
+			return float32(-knockX[f-3]), float32(y[f-3])
 		} else {
-			// Recovery
 			recoverX := []int{4, 3, 2, 1, 0, 0, 0}
 			bounceY := []int{-1, 0, 1, 0, -1, 0, 0}
 			idx := f - 9
@@ -161,35 +144,28 @@ func getHeadOffset(state *AnimationState) (float32, float32) {
 		}
 
 	case AnimThinking:
-		// Updated 16-frame thinking with sway and bob
 		swayCurve := []int{0, 0, 1, 1, 1, 1, 0, 0, 0, 0, -1, -1, -1, -1, 0, 0}
-		bobCurve := []int{0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0}
-		return float32(swayCurve[f%len(swayCurve)]), float32(-bobCurve[f%len(bobCurve)])
+		bobCurve := []int{0, 0, 0, 0, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0}
+		return float32(swayCurve[f%len(swayCurve)]), float32(bobCurve[f%len(bobCurve)])
 
 	case AnimWalk:
-		// bob is added to body position in spritegen (bob=1 means body down)
 		bobCurve := []int{0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0}
 		return 0, float32(bobCurve[f%len(bobCurve)])
 
 	case AnimVictoryPose:
-		// Victory pose fist pump - matches spritegen exactly
 		if f < 4 {
-			// Anticipation - coil down (oy+frame)
-			return 0, float32(f)
+			y := []int{0, 1, 2, 3}
+			return 0, float32(y[f])
 		} else if f < 8 {
-			// Explosive rise (reduced height to stay in frame)
-			riseY := []int{1, -1, -2, -3}
+			riseY := []int{1, -1, -3, -4}
 			return 0, float32(riseY[f-4])
 		} else if f < 14 {
-			// Peak pose with subtle bob (peakY=-3)
 			bob := []int{0, 1, 0, -1, 0, 1}
-			return 0, float32(-3 + bob[f-8])
+			return 0, float32(-4 + bob[f-8])
 		} else if f < 18 {
-			// Settle down
-			settleY := []int{-2, -1, 0, 0}
+			settleY := []int{-3, -2, -1, 0}
 			return 0, float32(settleY[f-14])
 		} else {
-			// Final stance
 			bounceY := []int{1, 0}
 			idx := f - 18
 			if idx >= len(bounceY) {
@@ -220,15 +196,15 @@ func (r *Renderer) drawHat(state *AnimationState) {
 		return
 	}
 
-	// Claude's base position in SCREEN coords (same as drawClaude)
-	scaledW := float32(spriteFrameWidth * claudeScale)
-	scaledH := float32(spriteFrameHeight * claudeScale)
-	claudeX := float32(screenWidth/2) - scaledW/2
-	claudeY := float32(160) - scaledH + 10
+	// Codex's base position in SCREEN coords (same as drawCodex)
+	scaledW := float32(spriteFrameWidth * codexScale)
+	scaledH := float32(spriteFrameHeight * codexScale)
+	codexX := float32(screenWidth/2) - scaledW/2
+	codexY := float32(160) - scaledH + 10
 
-	// Hat dimensions (scale with Claude)
-	hatW := float32(hat.Width) * float32(claudeScale)
-	hatH := float32(hat.Height) * float32(claudeScale)
+	// Hat dimensions (scale with Codex)
+	hatW := float32(hat.Width) * float32(codexScale)
+	hatH := float32(hat.Height) * float32(codexScale)
 
 	var hatX, hatY float32
 
@@ -238,29 +214,26 @@ func (r *Renderer) drawHat(state *AnimationState) {
 		// Position so the top of headphones aligns with top of head
 		// Scale wider to wrap around head properly
 		hatW = hatW * 1.4
-		spriteHeadY := float32(9) // Top of head
-		hatX = claudeX + scaledW/2 - hatW/2 + headOffX*float32(claudeScale)
-		hatY = claudeY + (spriteHeadY+headOffY)*float32(claudeScale)
+		spriteHeadY := float32(6) // Top of new rounded head
+		hatX = codexX + scaledW/2 - hatW/2 + headOffX*float32(codexScale)
+		hatY = codexY + (spriteHeadY+headOffY)*float32(codexScale)
 	} else if hatName == "zeus" {
 		// Zeus hair is a wig that frames the face with beard below
 		// Scale wider to wrap around head properly
 		hatW = hatW * 1.4
-		spriteHeadY := float32(6) // Align with top of head
-		hatX = claudeX + scaledW/2 - hatW/2 + headOffX*float32(claudeScale)
-		hatY = claudeY + (spriteHeadY+headOffY)*float32(claudeScale)
+		spriteHeadY := float32(4) // Slightly above the helmet silhouette
+		hatX = codexX + scaledW/2 - hatW/2 + headOffX*float32(codexScale)
+		hatY = codexY + (spriteHeadY+headOffY)*float32(codexScale)
 	} else {
-		// Standard hat positioning - sits ON TOP of head
-		// In sprite space, Claude's body top is at y=12
-		// Hat should sit ON TOP of the body, so just above y=12
-		// Hat bottom edge should be around sprite y=10
-		spriteHeadY := float32(10) // Where top of head is in 32x32 sprite
+		// Standard hat positioning - sits on the Pet helmet top.
+		spriteHeadY := float32(6)
 
 		// Convert to screen coords:
-		// claudeY is the top-left of the 32x32 sprite frame (scaled)
+		// codexY is the top-left of the 32x32 sprite frame (scaled)
 		// Add spriteHeadY * scale to get head position
 		// Add animation offset * scale
-		hatX = claudeX + scaledW/2 - hatW/2 + headOffX*float32(claudeScale)
-		hatY = claudeY + (spriteHeadY+headOffY)*float32(claudeScale) - hatH + 2*float32(claudeScale)
+		hatX = codexX + scaledW/2 - hatW/2 + headOffX*float32(codexScale)
+		hatY = codexY + (spriteHeadY+headOffY)*float32(codexScale) - hatH + 2*float32(codexScale)
 	}
 
 	sourceRec := rl.Rectangle{
@@ -298,65 +271,60 @@ func (r *Renderer) drawFace(state *AnimationState) {
 		return
 	}
 
-	// Claude's base position
-	scaledW := float32(spriteFrameWidth * claudeScale)
-	scaledH := float32(spriteFrameHeight * claudeScale)
-	claudeX := float32(screenWidth/2) - scaledW/2
-	claudeY := float32(160) - scaledH + 10
+	// Codex's base position
+	scaledW := float32(spriteFrameWidth * codexScale)
+	scaledH := float32(spriteFrameHeight * codexScale)
+	codexX := float32(screenWidth/2) - scaledW/2
+	codexY := float32(160) - scaledH + 10
 
 	// Face accessory dimensions
-	faceW := float32(face.Width) * float32(claudeScale)
-	faceH := float32(face.Height) * float32(claudeScale)
+	faceW := float32(face.Width) * float32(codexScale)
+	faceH := float32(face.Height) * float32(codexScale)
 
 	// Position depends on accessory type
-	// Claude's eyes are at ~y=13-17, body at y=12-22
-	// Right eye at x=18-20, left eye at x=11-13 (sprite center is x=16)
+	// New Pet face panel is at ~y=8-16, eyes around y=12-13, body at y=18-26.
 	var spriteY float32
 	var spriteXOffset float32 = 0 // offset from center
 	var centerVertically bool = true
 	switch faceName {
 	case "dealwithit":
-		// Goes ON the eyes (y=13-17)
-		spriteY = 15
+		// Goes across the cyan eye glyphs.
+		spriteY = 12
 	case "monocle":
-		// Monocle on RIGHT eye (x=18-20, y=13-16)
-		// Right eye center is ~x=19, sprite center is x=16, so offset +3
-		spriteY = 13
+		// Monocle on RIGHT eye within the face panel.
+		spriteY = 9
 		spriteXOffset = 3
 		centerVertically = false // position from top of sprite
 	case "mustache":
-		// Below eyes, on the "mouth" area
-		spriteY = 19
+		// Lower edge of the face panel.
+		spriteY = 16
 	case "pipe":
-		// Pipe stem comes from mouth (right side), bowl extends outward
-		// Stem starts at sprite y row 7-9, position at mouth level y~18
-		spriteY = 12
+		// Pipe stem comes from the lower-right face panel.
+		spriteY = 13
 		spriteXOffset = 3
 		centerVertically = false
 	case "eyepatch":
-		// Eyepatch over left eye (left eye is at sprite x=11-13, y=13-16)
-		// Patch portion is at sprite columns 1-5, diagonal strap
-		spriteY = 12
+		// Eyepatch over left eye in the face panel.
+		spriteY = 9
 		spriteXOffset = -3
 		centerVertically = false
 	case "wizardbeard":
-		// Beard hangs below face/chin
-		spriteY = 18
+		// Beard hangs from the helmet/face-panel bottom.
+		spriteY = 15
 		centerVertically = false
 	case "bandana":
-		// Bandana headband sits on forehead above eyes
-		spriteY = 10
+		// Bandana sits across the helmet forehead.
+		spriteY = 7
 		centerVertically = false
 	case "borat":
-		// Mankini - straps at shoulder level (body top y=12), pouch at bottom
-		// Sprite is 11px tall, center at y=18 puts straps at ~12-13, pouch at ~23
-		spriteY = 18
+		// Body costume: straps at body top, pouch near feet.
+		spriteY = 20
 	default:
-		spriteY = 16
+		spriteY = 13
 	}
 
-	faceX := claudeX + scaledW/2 - faceW/2 + (headOffX+spriteXOffset)*float32(claudeScale)
-	faceY := claudeY + (spriteY+headOffY)*float32(claudeScale)
+	faceX := codexX + scaledW/2 - faceW/2 + (headOffX+spriteXOffset)*float32(codexScale)
+	faceY := codexY + (spriteY+headOffY)*float32(codexScale)
 	if centerVertically {
 		faceY -= faceH / 2
 	}
@@ -378,9 +346,11 @@ func (r *Renderer) drawFace(state *AnimationState) {
 	rl.DrawTexturePro(face, sourceRec, destRec, rl.Vector2{}, 0, rl.White)
 }
 
-func (r *Renderer) drawPlaceholderClaude(x, y int, state *AnimationState) {
+func (r *Renderer) drawPlaceholderCodex(x, y int, state *AnimationState) {
 	// Simple placeholder when no sprites loaded
-	color := rl.Color{R: 217, G: 119, B: 87, A: 255}
+	color := rl.Color{R: 93, G: 141, B: 255, A: 255}
+	panel := rl.Color{R: 11, G: 22, B: 56, A: 255}
+	cyan := rl.Color{R: 114, G: 246, B: 255, A: 255}
 
 	bobOffset := 0
 	if state.CurrentAnim == AnimIdle {
@@ -388,10 +358,10 @@ func (r *Renderer) drawPlaceholderClaude(x, y int, state *AnimationState) {
 	}
 
 	// Body
-	rl.DrawRectangle(int32(x+8), int32(y+20), 16, 24, color)
+	rl.DrawRectangle(int32(x+22), int32(y+36), 20, 18, color)
 	// Head
-	rl.DrawCircle(int32(x+16), int32(y+14+bobOffset), 10, color)
-	// Eyes
-	rl.DrawCircle(int32(x+13), int32(y+12+bobOffset), 2, rl.White)
-	rl.DrawCircle(int32(x+19), int32(y+12+bobOffset), 2, rl.White)
+	rl.DrawCircle(int32(x+32), int32(y+22+bobOffset), 22, color)
+	// Face panel
+	rl.DrawRectangleRounded(rl.Rectangle{X: float32(x + 16), Y: float32(y + 18 + bobOffset), Width: 32, Height: 16}, 0.25, 4, panel)
+	rl.DrawText(">_", int32(x+23), int32(y+20+bobOffset), 12, cyan)
 }

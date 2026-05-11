@@ -24,7 +24,7 @@ func (r *Renderer) DrawGameUI(state *GameState) {
 	// Draw quest text at top (on top of level indicator)
 	r.drawQuestText(state)
 
-	// Draw thought bubble (above Claude)
+	// Draw thought bubble (above Codex)
 	if state.ThoughtText != "" && state.ThoughtFade > 0 {
 		r.drawThoughtBubble(state)
 	}
@@ -43,7 +43,7 @@ func (r *Renderer) DrawGameUI(state *GameState) {
 	// Draw flying enemies (before mini agents so they appear behind)
 	r.drawFlyingEnemies(state)
 
-	// Draw mini agents (subagent mini Claudes)
+	// Draw mini agents (subagent mini Codexs)
 	r.drawMiniAgents(state)
 
 	// Draw think hard effects
@@ -94,7 +94,7 @@ func (r *Renderer) drawThrownTools(state *GameState) {
 	}
 }
 
-// drawFlyingEnemies renders enemies flying toward Claude
+// drawFlyingEnemies renders enemies flying toward Codex
 func (r *Renderer) drawFlyingEnemies(state *GameState) {
 	for _, enemy := range state.FlyingEnemies {
 		// Show impact effect
@@ -143,7 +143,7 @@ func (r *Renderer) drawFlyingEnemies(state *GameState) {
 	}
 }
 
-// drawImpactEffect renders the impact burst when an enemy hits Claude
+// drawImpactEffect renders the impact burst when an enemy hits Codex
 func (r *Renderer) drawImpactEffect(x, y, timer float32, enemyType EnemyType) {
 	// Impact expands outward
 	progress := 1.0 - (timer / 0.3) // 0 to 1 as timer goes from 0.3 to 0
@@ -182,7 +182,7 @@ func (r *Renderer) drawImpactEffect(x, y, timer float32, enemyType EnemyType) {
 	rl.DrawRectangle(cx-3, cy-3, 6, 6, flashColor)
 }
 
-// drawMiniAgents renders all active mini Claudes (subagents)
+// drawMiniAgents renders all active mini Codexs (subagents)
 func (r *Renderer) drawMiniAgents(state *GameState) {
 	if !r.hasMiniSprites {
 		// Fallback: draw colored rectangles with names
@@ -291,7 +291,7 @@ func (r *Renderer) drawQuestText(state *GameState) {
 	}
 }
 
-// drawThoughtBubble renders Claude's current thought in a cloud-like bubble
+// drawThoughtBubble renders Codex's current thought in a cloud-like bubble
 func (r *Renderer) drawThoughtBubble(state *GameState) {
 	if state.ThoughtText == "" || state.ThoughtFade <= 0 {
 		return
@@ -315,7 +315,7 @@ func (r *Renderer) drawThoughtBubble(state *GameState) {
 	textColor := rl.Color{R: 60, G: 55, B: 50, A: alpha}
 	shadowColor := rl.Color{R: 0, G: 0, B: 0, A: uint8(float32(alpha) * 0.3)}
 
-	// Bubble dimensions - positioned above Claude
+	// Bubble dimensions - positioned above Codex
 	padding := int32(4)
 	fontSize := int32(5)
 	if r.hasGameFont {
@@ -349,10 +349,10 @@ func (r *Renderer) drawThoughtBubble(state *GameState) {
 		bubbleWidth = 40
 	}
 
-	// Position: above and to the right of Claude's head
-	claudeX := float32(screenWidth / 2)
-	bubbleX := int32(claudeX) - bubbleWidth/2 + 20
-	bubbleY := int32(50) // Above Claude
+	// Position: above and to the right of Codex's head
+	codexX := float32(screenWidth / 2)
+	bubbleX := int32(codexX) - bubbleWidth/2 + 20
+	bubbleY := int32(50) // Above Codex
 
 	// Keep bubble on screen
 	if bubbleX < 5 {
@@ -378,21 +378,21 @@ func (r *Renderer) drawThoughtBubble(state *GameState) {
 		0.3, 8, bubbleBorder,
 	)
 
-	// Draw thought bubble "tail" - small circles leading toward Claude's head
-	// Claude position: top-left (128, 106), size 64x64, head at ~Y=120
-	claudeHeadX := int32(screenWidth / 2) // 160
-	claudeHeadY := int32(120)             // Top of head area
+	// Draw thought bubble "tail" - small circles leading toward Codex's head
+	// Codex position: top-left (128, 106), size 64x64, head at ~Y=120
+	codexHeadX := int32(screenWidth / 2) // 160
+	codexHeadY := int32(120)             // Top of head area
 
 	// Start tail from bottom of bubble, slightly left of center
 	tailStartX := bubbleX + bubbleWidth/2
 	tailStartY := bubbleY + bubbleHeight
 
-	// Three circles in a curved path toward Claude's head
+	// Three circles in a curved path toward Codex's head
 	// Calculate direction vector
-	dx := float32(claudeHeadX - tailStartX)
-	dy := float32(claudeHeadY - tailStartY)
+	dx := float32(codexHeadX - tailStartX)
+	dy := float32(codexHeadY - tailStartY)
 
-	// Draw circles along the path, getting smaller as they approach Claude
+	// Draw circles along the path, getting smaller as they approach Codex
 	rl.DrawCircle(tailStartX+int32(dx*0.2), tailStartY+int32(dy*0.25), 4, bubbleBg)
 	rl.DrawCircleLines(tailStartX+int32(dx*0.2), tailStartY+int32(dy*0.25), 4, bubbleBorder)
 	rl.DrawCircle(tailStartX+int32(dx*0.45), tailStartY+int32(dy*0.5), 3, bubbleBg)

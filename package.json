@@ -1,21 +1,21 @@
 {
-  "name": "claude-quest",
+  "name": "codex-quest",
   "version": "0.1.9",
-  "description": "Pixel-art RPG companion for Claude Code. Watch Claude cast spells, battle bugs, and quest through beautiful biomes as you code together.",
+  "description": "Pixel-art RPG companion for Codex. Watch Codex reason, run commands, edit files, and quest through beautiful biomes as you code together.",
   "bin": {
-    "cq": "bin/cq",
-    "claude-quest": "bin/cq"
+    "cxq": "bin/cxq",
+    "codex-quest": "bin/cxq"
   },
   "scripts": {
     "postinstall": "node scripts/install.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Michaelliv/claude-quest.git"
+    "url": "git+https://github.com/pangin/codex-quest.git"
   },
   "keywords": [
-    "claude",
-    "claude-code",
+    "codex",
+    "codex-cli",
     "animation",
     "rpg",
     "pixel-art",
@@ -24,9 +24,9 @@
   "author": "Michaelliv",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Michaelliv/claude-quest/issues"
+    "url": "https://github.com/pangin/codex-quest/issues"
   },
-  "homepage": "https://github.com/Michaelliv/claude-quest#readme",
+  "homepage": "https://github.com/pangin/codex-quest#readme",
   "files": [
     "bin",
     "scripts",

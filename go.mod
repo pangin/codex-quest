@@ -1,4 +1,4 @@
-module claude-quest
+module codex-quest
 
 go 1.25.4
 

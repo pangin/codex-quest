@@ -8,7 +8,7 @@ import (
 
 func (r *Renderer) spawnParticles(state *AnimationState) {
 	cx := float32(screenWidth / 2)
-	cy := float32(160 - spriteFrameHeight*claudeScale/2) // Center of Claude
+	cy := float32(160 - spriteFrameHeight*codexScale/2) // Center of Codex
 
 	switch state.CurrentAnim {
 	case AnimCasting:

@@ -7,8 +7,8 @@ const { execSync } = require('child_process');
 const zlib = require('zlib');
 const tar = require('tar');
 
-const REPO = 'Michaelliv/claude-quest';
-const BINARY_NAME = 'cq';
+const REPO = 'pangin/codex-quest';
+const BINARY_NAME = 'cxq';
 
 function getPlatformInfo() {
   const platform = process.platform;
@@ -47,7 +47,7 @@ function getPlatformInfo() {
 
 function getAssetName(version, os, cpu) {
   const ext = os === 'windows' ? 'zip' : 'tar.gz';
-  return `claude-quest_${version}_${os}_${cpu}.${ext}`;
+  return `codex-quest_${version}_${os}_${cpu}.${ext}`;
 }
 
 async function getLatestRelease() {
@@ -56,7 +56,7 @@ async function getLatestRelease() {
       hostname: 'api.github.com',
       path: `/repos/${REPO}/releases/latest`,
       headers: {
-        'User-Agent': 'claude-quest-npm-installer',
+        'User-Agent': 'codex-quest-npm-installer',
       },
     };
 
@@ -80,7 +80,7 @@ async function downloadFile(url, destPath) {
 
     const request = (url) => {
       https.get(url, {
-        headers: { 'User-Agent': 'claude-quest-npm-installer' }
+        headers: { 'User-Agent': 'codex-quest-npm-installer' }
       }, (response) => {
         if (response.statusCode === 302 || response.statusCode === 301) {
           request(response.headers.location);
@@ -127,7 +127,7 @@ async function extractZip(archivePath, destDir) {
 
 async function main() {
   try {
-    console.log('Installing Claude Quest...');
+    console.log('Installing Codex Quest...');
 
     const { os, cpu, isWindows } = getPlatformInfo();
     console.log(`Platform: ${os}-${cpu}`);
@@ -161,12 +161,12 @@ async function main() {
     if (isWindows) {
       await extractZip(archivePath, tmpDir);
       fs.renameSync(
-        path.join(tmpDir, `cq-windows-amd64.exe`),
-        path.join(binDir, 'cq.exe')
+        path.join(tmpDir, `cxq-windows-amd64.exe`),
+        path.join(binDir, 'cxq.exe')
       );
     } else {
       await extractTarGz(archivePath, tmpDir);
-      const extractedBinary = path.join(tmpDir, `cq-${os}-${cpu}`);
+      const extractedBinary = path.join(tmpDir, `cxq-${os}-${cpu}`);
       const destBinary = path.join(binDir, BINARY_NAME);
       fs.renameSync(extractedBinary, destBinary);
       fs.chmodSync(destBinary, '755');
@@ -175,8 +175,8 @@ async function main() {
     // Cleanup
     fs.rmSync(tmpDir, { recursive: true, force: true });
 
-    console.log('Claude Quest installed successfully!');
-    console.log('Run "cq demo" to see animations or "cq" to watch your current project.');
+    console.log('Codex Quest installed successfully!');
+    console.log('Run "cxq" to watch your current project.');
   } catch (error) {
     console.error('Installation failed:', error.message);
     process.exit(1);

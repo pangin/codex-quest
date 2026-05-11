@@ -5,7 +5,7 @@ import (
 	"image/color"
 )
 
-// Claude's official color palette
+// Codex's official color palette
 var (
 	PrimaryOrange   = color.RGBA{0xFF, 0x99, 0x33, 0xFF}
 	ShadowOrange    = color.RGBA{0xCC, 0x66, 0x00, 0xFF}
@@ -28,9 +28,9 @@ const (
 	EyeOpen EyeState = iota
 	EyeHalfClosed
 	EyeClosed
-	EyeSquint  // ">" shape
-	EyeHappy   // "^" shape
-	EyeX       // X_X hurt
+	EyeSquint // ">" shape
+	EyeHappy  // "^" shape
+	EyeX      // X_X hurt
 )
 
 // MouthState represents different mouth shapes
@@ -39,9 +39,9 @@ type MouthState int
 const (
 	MouthNone MouthState = iota
 	MouthSmile
-	MouthOpen    // "o" shape
-	MouthWide    // Yawning/surprised
-	MouthLine    // Neutral "-"
+	MouthOpen // "o" shape
+	MouthWide // Yawning/surprised
+	MouthLine // Neutral "-"
 )
 
 // GenerateEyeTexture creates a 3x4 eye texture for the given state
@@ -285,9 +285,9 @@ func generateLightbulb() *image.RGBA {
 	}
 
 	o := Outline
-	g := SparkBright  // glow
-	h := SparkYellow  // highlight
-	m := SparkDark    // main
+	g := SparkBright                    // glow
+	h := SparkYellow                    // highlight
+	m := SparkDark                      // main
 	b := color.RGBA{140, 140, 140, 255} // base
 
 	pattern := [][]color.RGBA{

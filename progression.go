@@ -153,9 +153,9 @@ const (
 func getProfilePath() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return ".claude-quest-profile.json"
+		return profileFileName
 	}
-	return filepath.Join(home, ".claude-quest-profile.json")
+	return filepath.Join(home, profileFileName)
 }
 
 // LoadProfile loads the career profile from disk, or creates a new one

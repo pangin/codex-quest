@@ -1,6 +1,6 @@
 # Binaries
-claude-quest
-cq
+codex-quest
+cxq
 *.exe
 *.dll
 *.so
@@ -27,11 +27,12 @@ go.work.sum
 .DS_Store
 Thumbs.db
 
-# Claude Code
-.claude/
+# Codex
+.codex/
 
 # User preferences (local)
-.claude-quest-prefs.json
+.codex-quest-prefs.json
+.codex-quest-profile.json
 
 # Debug/temp
 *.log

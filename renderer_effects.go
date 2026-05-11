@@ -129,11 +129,11 @@ func (r *Renderer) drawThinkHardEffect(state *GameState) {
 
 	// Position varies based on timer - cycles through different spots
 	positions := []struct{ x, y int32 }{
-		{screenWidth/2 + 40, 70},  // Right of head
-		{screenWidth/2 - 50, 65},  // Left of head
-		{screenWidth/2 + 50, 55},  // Upper right
-		{screenWidth/2 - 40, 80},  // Lower left
-		{screenWidth/2, 50},       // Above head
+		{screenWidth/2 + 40, 70}, // Right of head
+		{screenWidth/2 - 50, 65}, // Left of head
+		{screenWidth/2 + 50, 55}, // Upper right
+		{screenWidth/2 - 40, 80}, // Lower left
+		{screenWidth / 2, 50},    // Above head
 	}
 	posIdx := int(state.ThinkHardTimer*1.5) % len(positions)
 	cx := positions[posIdx].x

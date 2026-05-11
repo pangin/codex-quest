@@ -288,8 +288,8 @@ func (hr *HotReloader) doRegenerate() {
 	fmt.Println("Sprites regenerated successfully!")
 
 	// Queue reload of all sprite sheets
-	hr.reloadQueue <- getAssetPath("claude/spritesheet.png")
-	hr.reloadQueue <- getAssetPath("claude/mini_spritesheet.png")
+	hr.reloadQueue <- getAssetPath("codex/spritesheet.png")
+	hr.reloadQueue <- getAssetPath("codex/mini_spritesheet.png")
 	hr.reloadQueue <- getAssetPath("enemies/enemy_spritesheet.png")
 	hr.reloadQueue <- getAssetPath("ui/chest.png")
 }
@@ -299,8 +299,8 @@ func (hr *HotReloader) ForceReloadAll() {
 	fmt.Println("Force reloading all textures...")
 
 	// Queue all known textures
-	hr.reloadQueue <- getAssetPath("claude/spritesheet.png")
-	hr.reloadQueue <- getAssetPath("claude/mini_spritesheet.png")
+	hr.reloadQueue <- getAssetPath("codex/spritesheet.png")
+	hr.reloadQueue <- getAssetPath("codex/mini_spritesheet.png")
 	hr.reloadQueue <- getAssetPath("enemies/enemy_spritesheet.png")
 	hr.reloadQueue <- getAssetPath("ui/chest.png")
 

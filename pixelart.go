@@ -25,8 +25,8 @@ func NewPixelAlpha(r, g, b, a uint8) PixelColor {
 	return PixelColor{r, g, b, a}
 }
 
-// ClaudePalette contains the official Claude color palette
-var ClaudePalette = struct {
+// CodexPalette contains the official Codex color palette
+var CodexPalette = struct {
 	PrimaryOrange   PixelColor
 	ShadowOrange    PixelColor
 	HighlightOrange PixelColor
@@ -54,13 +54,13 @@ var ClaudePalette = struct {
 
 // Shorthand aliases
 var (
-	P = ClaudePalette.PrimaryOrange
-	S = ClaudePalette.ShadowOrange
-	H = ClaudePalette.HighlightOrange
-	O = ClaudePalette.Outline
-	E = ClaudePalette.EyeColor
-	M = ClaudePalette.MouthColor
-	W = ClaudePalette.White
+	P = CodexPalette.PrimaryOrange
+	S = CodexPalette.ShadowOrange
+	H = CodexPalette.HighlightOrange
+	O = CodexPalette.Outline
+	E = CodexPalette.EyeColor
+	M = CodexPalette.MouthColor
+	W = CodexPalette.White
 	_ = Clear // X for clear in patterns
 )
 

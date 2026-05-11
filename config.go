@@ -8,9 +8,9 @@ import (
 // Config holds user configuration
 type Config struct {
 	// Equipped accessories
-	Hat   string `json:"hat,omitempty"`
-	Cape  string `json:"cape,omitempty"`
-	Item  string `json:"item,omitempty"` // Held item
+	Hat  string `json:"hat,omitempty"`
+	Cape string `json:"cape,omitempty"`
+	Item string `json:"item,omitempty"` // Held item
 
 	// Display settings
 	Scale      int  `json:"scale"`

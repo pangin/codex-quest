@@ -8,13 +8,13 @@ import (
 
 // Strip picker constants - calculated for proper centering
 const (
-	stripHeight  = 32                              // Height of the picker strip
-	stripY       = screenHeight - stripHeight - 2  // Y position (166)
-	stripX       = 4                               // X position
-	stripW       = screenWidth - 8                 // Width (312)
-	slotWidth    = 72                              // Width per slot (4*72=288)
-	slotCount    = 4                               // Number of slots
-	slotIconSize = 12                              // Size of item icons
+	stripHeight  = 32                             // Height of the picker strip
+	stripY       = screenHeight - stripHeight - 2 // Y position (166)
+	stripX       = 4                              // X position
+	stripW       = screenWidth - 8                // Width (312)
+	slotWidth    = 72                             // Width per slot (4*72=288)
+	slotCount    = 4                              // Number of slots
+	slotIconSize = 12                             // Size of item icons
 )
 
 // Calculated at init - center the slots horizontally
@@ -25,7 +25,7 @@ var auraColors = map[string]rl.Color{
 	"aura_pixel":    {R: 255, G: 255, B: 200, A: 255},
 	"aura_flame":    {R: 255, G: 120, B: 40, A: 255},
 	"aura_frost":    {R: 150, G: 200, B: 255, A: 255},
-	"aura_electric": {R: 255, G: 240, B: 80, A: 255},  // Bright yellow lightning
+	"aura_electric": {R: 255, G: 240, B: 80, A: 255}, // Bright yellow lightning
 	"aura_shadow":   {R: 80, G: 50, B: 120, A: 255},
 	"aura_heart":    {R: 255, G: 100, B: 150, A: 255},
 	"aura_code":     {R: 0, G: 255, B: 100, A: 255},
@@ -281,7 +281,7 @@ func (r *Renderer) drawPickerSlot(x, y int32, slot int, label string, alpha floa
 	a := uint8(alpha * 255)
 
 	// Cell dimensions: 72-4=68 wide, 32-4=28 tall
-	cellW := int32(slotWidth - 4)  // 68
+	cellW := int32(slotWidth - 4)   // 68
 	cellH := int32(stripHeight - 4) // 28
 	cellX := x + 2
 	cellY := y + 2
@@ -453,10 +453,10 @@ func (r *Renderer) drawSlotItemIcon(x, y int32, slot int, itemID string, alpha u
 			innerColor := rl.Color{R: 255, G: 255, B: 255, A: alpha / 3}
 			rl.DrawRectangle(x+2, y+2, slotIconSize-4, slotIconSize-4, innerColor)
 		}
-	case 3: // TRAIL - dust particles flowing left (opposite to Claude's walk direction)
+	case 3: // TRAIL - dust particles flowing left (opposite to Codex's walk direction)
 		if color, ok := trailColors[itemID]; ok {
 			cy := y + slotIconSize/2
-			// Particles flow from right to left (Claude walks right, dust trails behind)
+			// Particles flow from right to left (Codex walks right, dust trails behind)
 			// Rightmost = newest/brightest, leftmost = oldest/faintest
 			color.A = alpha / 4
 			rl.DrawCircle(x+1, cy-1, 1, color) // Faint, dispersed
@@ -467,7 +467,7 @@ func (r *Renderer) drawSlotItemIcon(x, y int32, slot int, itemID string, alpha u
 			color.A = alpha * 2 / 3
 			rl.DrawCircle(x+7, cy, 2, color) // Brighter
 			color.A = alpha
-			rl.DrawCircle(x+10, cy, 2, color) // Brightest (just left Claude)
+			rl.DrawCircle(x+10, cy, 2, color) // Brightest (just left Codex)
 		}
 	}
 }

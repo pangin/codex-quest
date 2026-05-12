@@ -76,33 +76,57 @@ async function getLatestRelease() {
 
 async function downloadFile(url, destPath) {
   return new Promise((resolve, reject) => {
-    const file = fs.createWriteStream(destPath);
+    const maxRetries = 3;
+    let retryCount = 0;
 
-    const request = (url) => {
-      https.get(url, {
-        headers: { 'User-Agent': 'codex-quest-npm-installer' }
-      }, (response) => {
-        if (response.statusCode === 302 || response.statusCode === 301) {
-          request(response.headers.location);
-          return;
-        }
+    const attempt = () => {
+      const file = fs.createWriteStream(destPath);
 
-        if (response.statusCode !== 200) {
-          reject(new Error(`Failed to download: ${response.statusCode}`));
-          return;
-        }
+      const request = (url) => {
+        const request = https.get(url, {
+          headers: { 'User-Agent': 'codex-quest-npm-installer' },
+          timeout: 30000,
+        }, (response) => {
+          if (response.statusCode === 302 || response.statusCode === 301) {
+            request(response.headers.location);
+            return;
+          }
 
-        response.pipe(file);
-        file.on('finish', () => {
-          file.close(resolve);
+          if (response.statusCode !== 200) {
+            file.destroy();
+            const err = new Error(`Failed to download: ${response.statusCode}`);
+            if (retryCount < maxRetries) {
+              retryCount++;
+              console.log(`Retry ${retryCount}/${maxRetries}...`);
+              setTimeout(attempt, 1000);
+            } else {
+              reject(err);
+            }
+            return;
+          }
+
+          response.pipe(file);
+          file.on('finish', () => {
+            file.close(resolve);
+          });
+        }).on('error', (err) => {
+          file.destroy();
+          fs.unlink(destPath, () => {});
+          if (retryCount < maxRetries) {
+            retryCount++;
+            console.log(`Network error, retry ${retryCount}/${maxRetries}...`);
+            setTimeout(attempt, 1000);
+          } else {
+            reject(err);
+          }
         });
-      }).on('error', (err) => {
-        fs.unlink(destPath, () => {});
-        reject(err);
-      });
+        request.setTimeout(30000);
+      };
+
+      request(url);
     };
 
-    request(url);
+    attempt();
   });
 }
 
@@ -172,8 +196,29 @@ async function main() {
       fs.chmodSync(destBinary, '755');
     }
 
-    // Cleanup
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+    // Cleanup - with retry logic
+    console.log('Cleaning up...');
+    let cleanupAttempts = 0;
+    while (cleanupAttempts < 3) {
+      try {
+        // Remove any remaining files first
+        if (fs.existsSync(archivePath)) {
+          fs.unlinkSync(archivePath);
+        }
+        // Then remove directory
+        if (fs.existsSync(tmpDir)) {
+          fs.rmSync(tmpDir, { recursive: true, force: true });
+        }
+        break;
+      } catch (err) {
+        cleanupAttempts++;
+        if (cleanupAttempts >= 3) {
+          console.warn('Warning: Could not clean up temporary files:', err.message);
+        } else {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+    }
 
     console.log('Codex Quest installed successfully!');
     console.log('Run "cxq" to watch your current project.');

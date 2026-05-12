@@ -1,11 +1,16 @@
-# Binaries
-codex-quest
-cxq
-*.exe
+# Binaries (project root)
+/codex-quest
+/cxq
 *.dll
 *.so
 *.dylib
-bin/
+
+# Downloaded native binaries — keep bin/cxq (JS shim) tracked
+bin/*
+!bin/cxq
+!bin/.gitkeep
+*.exe
+
 .tmp/
 
 # Test binaries

@@ -1,0 +1,33 @@
+#!/usr/bin/env node
+
+const { spawn } = require('child_process');
+const path = require('path');
+const fs = require('fs');
+
+const binaryName = process.platform === 'win32' ? 'cxq-bin.exe' : 'cxq-bin';
+const binaryPath = path.join(__dirname, binaryName);
+
+if (!fs.existsSync(binaryPath)) {
+  console.error(`codex-quest binary not found at ${binaryPath}`);
+  console.error('The postinstall step may have failed. Try reinstalling:');
+  console.error('  npm install -g codex-quest');
+  process.exit(1);
+}
+
+const child = spawn(binaryPath, process.argv.slice(2), {
+  stdio: 'inherit',
+  windowsHide: false,
+});
+
+child.on('exit', (code, signal) => {
+  if (signal) {
+    process.kill(process.pid, signal);
+  } else {
+    process.exit(code === null ? 0 : code);
+  }
+});
+
+child.on('error', (err) => {
+  console.error(`Failed to launch codex-quest binary: ${err.message}`);
+  process.exit(1);
+});

@@ -4,9 +4,12 @@ go.mod
 go.sum
 cmd/
 
-# Build artifacts
+# Build artifacts — native binaries are downloaded by postinstall, never published
 *.exe
 .tmp/
+bin/cxq-bin
+bin/cxq-bin.exe
+bin/cxq.exe
 
 # Git
 .git/

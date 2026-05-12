@@ -8,7 +8,7 @@ const zlib = require('zlib');
 const tar = require('tar');
 
 const REPO = 'pangin/codex-quest';
-const BINARY_NAME = 'cxq';
+const BINARY_NAME = process.platform === 'win32' ? 'cxq-bin.exe' : 'cxq-bin';
 
 function getPlatformInfo() {
   const platform = process.platform;
@@ -82,13 +82,13 @@ async function downloadFile(url, destPath) {
     const attempt = () => {
       const file = fs.createWriteStream(destPath);
 
-      const request = (url) => {
-        const request = https.get(url, {
+      const fetch = (url) => {
+        const req = https.get(url, {
           headers: { 'User-Agent': 'codex-quest-npm-installer' },
           timeout: 30000,
         }, (response) => {
           if (response.statusCode === 302 || response.statusCode === 301) {
-            request(response.headers.location);
+            fetch(response.headers.location);
             return;
           }
 
@@ -120,10 +120,10 @@ async function downloadFile(url, destPath) {
             reject(err);
           }
         });
-        request.setTimeout(30000);
+        req.setTimeout(30000);
       };
 
-      request(url);
+      fetch(url);
     };
 
     attempt();
@@ -182,17 +182,16 @@ async function main() {
 
     // Extract
     console.log('Extracting...');
+    const destBinary = path.join(binDir, BINARY_NAME);
     if (isWindows) {
       await extractZip(archivePath, tmpDir);
       fs.renameSync(
         path.join(tmpDir, `cxq-windows-amd64.exe`),
-        path.join(binDir, 'cxq.exe')
+        destBinary
       );
     } else {
       await extractTarGz(archivePath, tmpDir);
-      const extractedBinary = path.join(tmpDir, `cxq-${os}-${cpu}`);
-      const destBinary = path.join(binDir, BINARY_NAME);
-      fs.renameSync(extractedBinary, destBinary);
+      fs.renameSync(path.join(tmpDir, `cxq-${os}-${cpu}`), destBinary);
       fs.chmodSync(destBinary, '755');
     }
 

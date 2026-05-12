@@ -1,6 +1,6 @@
 {
   "name": "codex-quest",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Pixel-art RPG companion for Codex. Watch Codex reason, run commands, edit files, and quest through beautiful biomes as you code together.",
   "bin": {
     "cxq": "bin/cxq",

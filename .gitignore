@@ -5,6 +5,8 @@ cxq
 *.dll
 *.so
 *.dylib
+bin/
+.tmp/
 
 # Test binaries
 *.test
@@ -26,6 +28,12 @@ go.work.sum
 # OS
 .DS_Store
 Thumbs.db
+
+# Node.js
+node_modules/
+package-lock.json
+npm-debug.log
+yarn-error.log
 
 # Codex
 .codex/

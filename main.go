@@ -137,18 +137,29 @@ type GameState struct {
 
 	// Floating XP indicators
 	FloatingXPs []FloatingXP
+
+	// ReplayMode is true when events come from `cxq replay <file>` rather
+	// than a live session. In replay mode the persistent profile must not
+	// be mutated — visual indicators (SpawnFloatingXP, flow meter, session
+	// stats) still update so the playback is faithful.
+	ReplayMode bool
 }
 
-// NewGameState creates a new game state
-func NewGameState() *GameState {
+// NewGameState creates a new game state. When replayMode is true, the
+// persistent profile is loaded read-only: SessionsStarted is not bumped
+// and the profile is not re-saved on init.
+func NewGameState(replayMode bool) *GameState {
 	profile := LoadProfile()
-	profile.SessionsStarted++
-	profile.Save()
+	if !replayMode {
+		profile.SessionsStarted++
+		profile.Save()
+	}
 
 	return &GameState{
 		ManaMax:     maxTokens,
 		ManaDisplay: 0,
 		Profile:     profile,
+		ReplayMode:  replayMode,
 	}
 }
 
@@ -631,11 +642,13 @@ func (g *GameState) HandleEvent(event Event) {
 				g.Session.FlowMeter = 1.0
 				if !g.Session.FlowPeakReached {
 					g.Session.FlowPeakReached = true
-					// Grant XP for flow peak
-					if g.Profile.RecordFlowPeak() {
-						g.PendingLevelUp = true
+					// Grant XP for flow peak (visual-only in replay)
+					if !g.ReplayMode {
+						if g.Profile.RecordFlowPeak() {
+							g.PendingLevelUp = true
+						}
+						g.Profile.Save()
 					}
-					g.Profile.Save()
 				}
 			}
 			g.Session.TotalToolCalls++
@@ -648,30 +661,39 @@ func (g *GameState) HandleEvent(event Event) {
 			g.ManaMax = event.TokenUsage.ContextWindow
 		}
 		g.ManaTotal = event.TokenUsage.Total()
-		if g.Profile != nil {
+		if g.Profile != nil && !g.ReplayMode {
 			g.Profile.RecordTokens(event.TokenUsage.Total())
 		}
 	}
 
-	// Track progression based on event type
+	// Track progression based on event type. SessionStats and visual XP
+	// indicators always update; persistent Profile mutations are gated by
+	// ReplayMode so cxq replay doesn't double-credit real progression.
 	if g.Profile != nil {
 		leveledUp := false
+		recordProfile := !g.ReplayMode
 
 		switch event.Type {
 		case EventReading:
 			g.Session.Reads++
-			leveledUp = g.Profile.RecordRead()
+			if recordProfile {
+				leveledUp = g.Profile.RecordRead()
+			}
 			g.SpawnFloatingXP(XPRead)
 
 		case EventWriting:
 			g.Session.Writes++
-			leveledUp = g.Profile.RecordWrite()
+			if recordProfile {
+				leveledUp = g.Profile.RecordWrite()
+			}
 			g.SpawnFloatingXP(XPWrite)
 
 		case EventBash:
 			success := !event.IsError
 			g.Session.RecordBashResult(success)
-			leveledUp = g.Profile.RecordBash(success, g.Session.CurrentBashStreak)
+			if recordProfile {
+				leveledUp = g.Profile.RecordBash(success, g.Session.CurrentBashStreak)
+			}
 			if success {
 				xp := XPBashSuccess
 				if g.Session.CurrentBashStreak > 1 {
@@ -683,7 +705,9 @@ func (g *GameState) HandleEvent(event Event) {
 			}
 
 		case EventThinkHard:
-			leveledUp = g.Profile.RecordThinking(event.ThinkLevel)
+			if recordProfile {
+				leveledUp = g.Profile.RecordThinking(event.ThinkLevel)
+			}
 			xp := XPThinkNormal
 			switch event.ThinkLevel {
 			case ThinkHard:
@@ -696,7 +720,9 @@ func (g *GameState) HandleEvent(event Event) {
 			g.SpawnFloatingXP(xp)
 
 		case EventAgentComplete:
-			leveledUp = g.Profile.RecordAgentComplete()
+			if recordProfile {
+				leveledUp = g.Profile.RecordAgentComplete()
+			}
 			g.SpawnFloatingXP(XPAgentComplete)
 
 		case EventTodoUpdate:
@@ -714,7 +740,7 @@ func (g *GameState) HandleEvent(event Event) {
 						}
 						if !wasCompleted {
 							g.Session.TodosCompleted++
-							if g.Profile.RecordTodoComplete() {
+							if recordProfile && g.Profile.RecordTodoComplete() {
 								leveledUp = true
 							}
 							g.SpawnFloatingXP(XPTodoComplete)
@@ -733,12 +759,17 @@ func (g *GameState) HandleEvent(event Event) {
 			if triggered, reason := g.Session.CheckBonusChest(); triggered {
 				g.PendingBonusChest = true
 				g.BonusChestReason = reason
-				g.Profile.BonusChestsFound++
+				if recordProfile {
+					g.Profile.BonusChestsFound++
+				}
 			}
 		}
 
-		// Save profile after changes
-		g.Profile.Save()
+		// Save profile after changes (skipped in replay so persistent
+		// progression remains untouched).
+		if recordProfile {
+			g.Profile.Save()
+		}
 	}
 
 	// Throw tool name for tool events
@@ -1108,6 +1139,9 @@ var animationNames = []string{
 func main() {
 	watcher := NewWatcher()
 	var err error
+	// replayMode toggles read-only profile semantics; only the replay branch
+	// flips it to true so visual progression updates but persisted XP doesn't.
+	replayMode := false
 
 	// Parse command line arguments
 	args := os.Args[1:]
@@ -1165,6 +1199,7 @@ func main() {
 				printUsage()
 				os.Exit(1)
 			}
+			replayMode = true
 			filePath := args[1]
 
 			// Check for speed flag
@@ -1221,7 +1256,7 @@ func main() {
 	config.Korean = koreanMode
 	renderer := NewRenderer(config)
 	animations := NewAnimationSystem()
-	gameState := NewGameState()
+	gameState := NewGameState(replayMode)
 	renderer.SetProfile(gameState.Profile)
 
 	for !rl.WindowShouldClose() {

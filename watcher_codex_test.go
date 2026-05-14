@@ -97,8 +97,10 @@ func TestParseCodexEvents(t *testing.T) {
 func TestStartReplayCodexSession(t *testing.T) {
 	dir := t.TempDir()
 	sessionPath := filepath.Join(dir, "rollout-test.jsonl")
+	// filepath.ToSlash so Windows backslashes don't become invalid JSON escapes.
+	cwdJSON := filepath.ToSlash(dir)
 	data := "" +
-		`{"type":"session_meta","payload":{"id":"s1","cwd":"` + dir + `"}}` + "\n" +
+		`{"type":"session_meta","payload":{"id":"s1","cwd":"` + cwdJSON + `"}}` + "\n" +
 		`{"type":"event_msg","payload":{"type":"user_message","message":"build it"}}` + "\n" +
 		`{"type":"response_item","payload":{"type":"function_call","name":"apply_patch","call_id":"c1","arguments":"{}"}}` + "\n"
 

@@ -6,9 +6,34 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
+
+// codexRolloutRE matches Codex session filenames like
+// rollout-2026-05-11T18-00-40-019e1644-61eb-75a0-b505-a540f0588361.jsonl.
+// Verified against ~/.codex/sessions during the 2026-05-14 audit.
+var codexRolloutRE = regexp.MustCompile(
+	`^rollout-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-` +
+		`[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-` +
+		`[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\.jsonl$`)
+
+// activeSessionMtimeWindow is the staleness threshold for switch candidates.
+// A file whose mtime is older than this is rejected as "not actively
+// growing" — prevents an external touch on an old session file from luring
+// the watcher away from the truly active one.
+const activeSessionMtimeWindow = 30 * time.Second
+
+// looksLikeActiveCodexSession gates file-switch candidates: must match the
+// rollout filename pattern AND have been modified within the staleness window.
+// The active file itself bypasses this guard (it's already accepted).
+func looksLikeActiveCodexSession(path string, modTime time.Time) bool {
+	if !codexRolloutRE.MatchString(filepath.Base(path)) {
+		return false
+	}
+	return time.Since(modTime) <= activeSessionMtimeWindow
+}
 
 // EventType represents the type of Codex event.
 type EventType int
@@ -104,6 +129,10 @@ type Watcher struct {
 	LastTokenUsage   *TokenUsage
 	CurrentTodos     []TodoItem
 	ActiveTaskAgents map[string]string
+
+	// seenLines drops any JSONL line whose raw bytes were emitted recently.
+	// Bounded ring buffer; see watcher_dedup.go for rationale.
+	seenLines *lineDedupSet
 }
 
 // NewWatcher creates a new event watcher.
@@ -112,6 +141,7 @@ func NewWatcher() *Watcher {
 		Events:           make(chan Event, 100),
 		ReplaySpeed:      200 * time.Millisecond,
 		ActiveTaskAgents: make(map[string]string),
+		seenLines:        newLineDedupSet(50000),
 	}
 }
 
@@ -192,6 +222,9 @@ func (w *Watcher) tailFile() {
 				}
 			}
 			w.lastPos = info.Size()
+			// Refresh baseline only on successful read so external touches
+			// can't silently push lastModTime past a real switch candidate.
+			w.lastModTime = info.ModTime()
 		}
 
 		file.Close()
@@ -209,24 +242,46 @@ func (w *Watcher) checkForNewerFile() bool {
 		return false
 	}
 
-	if filePath != w.FilePath && modTime.After(w.lastModTime) {
-		oldFile := filepath.Base(w.FilePath)
-		newFile := filepath.Base(filePath)
-
-		w.FilePath = filePath
-		w.lastModTime = modTime
-		w.lastPos = 0
-
-		w.Events <- Event{
-			Type:    EventSystemInit,
-			Details: fmt.Sprintf("Switched: %s", newFile),
-		}
-
-		fmt.Printf("Switched from %s to %s\n", oldFile, newFile)
-		return true
+	if filePath == w.FilePath {
+		return false
 	}
 
-	return false
+	// Compare against a fresh stat of the *currently* watched file, not the
+	// cached baseline — the active file is its own freshest reference and
+	// must not lose to a one-off external touch on a stale sibling.
+	if currentInfo, err := os.Stat(w.FilePath); err == nil {
+		if !modTime.After(currentInfo.ModTime()) {
+			return false
+		}
+	}
+
+	// Guard against non-rollout filenames and stale candidates.
+	if !looksLikeActiveCodexSession(filePath, modTime) {
+		return false
+	}
+
+	// Seek the new file to EOF so only events written AFTER the switch are
+	// emitted. Reading from byte 0 would re-emit the entire session and
+	// double-credit XP.
+	newInfo, err := os.Stat(filePath)
+	if err != nil {
+		return false
+	}
+
+	oldFile := filepath.Base(w.FilePath)
+	newFile := filepath.Base(filePath)
+
+	w.FilePath = filePath
+	w.lastModTime = newInfo.ModTime()
+	w.lastPos = newInfo.Size()
+
+	w.Events <- Event{
+		Type:    EventSystemInit,
+		Details: fmt.Sprintf("Switched: %s", newFile),
+	}
+
+	fmt.Printf("Switched from %s to %s\n", oldFile, newFile)
+	return true
 }
 
 // StartReplay plays through an existing Codex session file.
@@ -263,8 +318,16 @@ func newJSONLScanner(r io.Reader) *bufio.Scanner {
 	return scanner
 }
 
-// parseLine parses a Codex JSONL line.
+// parseLine parses a Codex JSONL line, deduping line-identical replays.
+//
+// Dedup happens here (not deeper in parseCodexLine) so it runs once per raw
+// line for every record type and skips the json.Unmarshal cost on duplicates.
+// Dedup set is instance-scoped: a second cxq run gets a fresh set, so user
+// intent to re-watch is preserved.
 func (w *Watcher) parseLine(line string) []Event {
+	if w.seenLines != nil && !w.seenLines.add(line) {
+		return nil
+	}
 	events, _ := w.parseCodexLine(line)
 	return events
 }
